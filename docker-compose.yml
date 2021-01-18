@@ -1,0 +1,14 @@
+version: '3.7'
+
+services:
+    nsqd:
+        image: nsqio/nsq:v1.2.0
+        command: /nsqd
+        ports:
+            - 4150:4150
+
+    nsqadmin:
+        image: nsqio/nsq:v1.2.0
+        command: /nsqadmin --nsqd-http-address=nsqd:4151 --http-address=0.0.0.0:4171
+        ports:
+            - 4171:4171

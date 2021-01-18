@@ -1,0 +1,52 @@
+{
+    "name": "nsq/nsq",
+    "type": "library",
+    "description": "NSQ Client for PHP",
+    "homepage": "https://github.com/nsqphp/nsqphp",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Konstantin Grachev",
+            "email": "me@grachevko.ru"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "ext-json": "*",
+        "clue/socket-raw": "^1.5",
+        "phpinnacle/buffer": "^1.2"
+    },
+    "require-dev": {
+        "ergebnis/composer-normalize": "9999999-dev",
+        "friendsofphp/php-cs-fixer": "^2.18",
+        "phpstan/phpstan": "^0.12.68",
+        "phpstan/phpstan-phpunit": "^0.12.17",
+        "phpstan/phpstan-strict-rules": "^0.12.9",
+        "phpunit/phpunit": "^9.5",
+        "vimeo/psalm": "^4.4"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "Nsq\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "phpcs": [
+            "vendor/bin/php-cs-fixer fix --verbose --diff --dry-run"
+        ],
+        "phpstan": [
+            "vendor/bin/phpstan analyse"
+        ],
+        "psalm": [
+            "vendor/bin/psalm"
+        ],
+        "tests": [
+            "vendor/bin/phpunit --verbose"
+        ]
+    }
+}
