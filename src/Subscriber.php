@@ -8,6 +8,8 @@ use Generator;
 
 final class Subscriber extends Reader
 {
+    public const STOP = true;
+
     /**
      * @psalm-return Generator<int, Envelope|null, true|null, void>
      */
@@ -20,14 +22,14 @@ final class Subscriber extends Reader
             $message = $this->consume($timeout);
 
             if (null === $message) {
-                if (true === yield null) {
+                if (self::STOP === yield null) {
                     break;
                 }
 
                 continue;
             }
 
-            if (true === yield new Envelope($message, $this)) {
+            if (self::STOP === yield new Envelope($message, $this)) {
                 break;
             }
 

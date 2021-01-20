@@ -87,7 +87,7 @@ foreach ($generator as $envelope) {
     }
     
     if ($stopSignalReceived) {
-        $generator->send(true); // Gracefully close connection
+        $generator->send(Subscriber::STOP); // Gracefully close connection
     }
 }
 ```
