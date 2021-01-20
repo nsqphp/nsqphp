@@ -4,24 +4,8 @@ declare(strict_types=1);
 
 namespace Nsq;
 
-use Throwable;
-use function sprintf;
-use const PHP_EOL;
-
-class Reader
+class Reader extends Connection
 {
-    private Connection $connection;
-
-    public function __construct(Connection $connection)
-    {
-        $this->connection = $connection;
-    }
-
-    public function __destruct()
-    {
-        $this->close();
-    }
-
     /**
      * Subscribe to a topic/channel.
      */
@@ -29,8 +13,8 @@ class Reader
     {
         $buffer = sprintf('SUB %s %s', $topic, $channel).PHP_EOL;
 
-        $this->connection->write($buffer);
-        $this->connection->read();
+        $this->write($buffer);
+        $this->consume();
     }
 
     /**
@@ -38,7 +22,7 @@ class Reader
      */
     public function rdy(int $count): void
     {
-        $this->connection->write('RDY '.$count.PHP_EOL);
+        $this->write('RDY '.$count.PHP_EOL);
     }
 
     /**
@@ -46,7 +30,7 @@ class Reader
      */
     public function fin(string $id): void
     {
-        $this->connection->write('FIN '.$id.PHP_EOL);
+        $this->write('FIN '.$id.PHP_EOL);
     }
 
     /**
@@ -57,7 +41,7 @@ class Reader
      */
     public function req(string $id, int $timeout): void
     {
-        $this->connection->write(sprintf('REQ %s %s', $id, $timeout).PHP_EOL);
+        $this->write(sprintf('REQ %s %s', $id, $timeout).PHP_EOL);
     }
 
     /**
@@ -65,35 +49,6 @@ class Reader
      */
     public function touch(string $id): void
     {
-        $this->connection->write('TOUCH '.$id.PHP_EOL);
-    }
-
-    public function consume(?float $timeout = null): ?Message
-    {
-        if (false === $this->connection->socket->selectRead($timeout)) {
-            return null;
-        }
-
-        return $this->connection->read() ?? $this->consume(0);
-    }
-
-    /**
-     * Cleanly close your connection (no more messages are sent).
-     */
-    public function close(): void
-    {
-        if ($this->connection->closed) {
-            return;
-        }
-
-        $this->connection->closed = true;
-
-        $this->connection->socket->write('CLS'.PHP_EOL);
-        $this->connection->read();
-
-        try {
-            $this->connection->socket->close();
-        } catch (Throwable $e) {
-        }
+        $this->write('TOUCH '.$id.PHP_EOL);
     }
 }

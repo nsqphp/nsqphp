@@ -10,13 +10,17 @@ use Socket\Raw\Factory;
 use Socket\Raw\Socket;
 use Throwable;
 use function json_encode;
+use function microtime;
 use function pack;
 use function sprintf;
 use const JSON_FORCE_OBJECT;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 
-final class Connection
+/**
+ * @internal
+ */
+abstract class Connection
 {
     private const OK = 'OK';
     private const HEARTBEAT = '_heartbeat_';
@@ -31,27 +35,47 @@ final class Connection
     private const BYTES_ID = 16;
     private const MAGIC_V2 = '  V2';
 
-    public Socket $socket;
+    public ?Socket $socket = null;
 
     public bool $closed = false;
 
-    private function __construct(Socket $socket)
+    private Config $config;
+
+    public function __construct(string $address)
     {
-        $this->socket = $socket;
+        $this->config = new Config($address);
     }
 
     /**
      * @psalm-suppress UnsafeInstantiation
-     *
-     * @return static
      */
-    public static function connect(Config $config): self
+    public function connect(): void
     {
-        $socket = (new Factory())->createClient($config->address);
-        $socket->write(self::MAGIC_V2);
+        $this->socket = (new Factory())->createClient($this->config->address);
+        $this->socket->write(self::MAGIC_V2);
+    }
 
-        // @phpstan-ignore-next-line
-        return new self($socket);
+    /**
+     * Cleanly close your connection (no more messages are sent).
+     */
+    public function disconnect(): void
+    {
+        if ($this->closed) {
+            return;
+        }
+
+        try {
+            $this->write('CLS'.PHP_EOL);
+            $this->consume(); // receive CLOSE_WAIT
+
+            if (null !== $this->socket) {
+                $this->socket->close();
+            }
+        } catch (Throwable $e) {
+            // Not interested
+        }
+
+        $this->closed = true;
     }
 
     /**
@@ -59,7 +83,7 @@ final class Connection
      *
      * @psalm-suppress PossiblyFalseOperand
      */
-    public function identify(array $arr): string
+    protected function identify(array $arr): string
     {
         $body = json_encode($arr, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
         $size = pack('N', \strlen($body));
@@ -70,21 +94,22 @@ final class Connection
     /**
      * @psalm-suppress PossiblyFalseOperand
      */
-    public function auth(string $secret): string
+    protected function auth(string $secret): string
     {
         $size = pack('N', \strlen($secret));
 
         return 'AUTH'.PHP_EOL.$size.$secret;
     }
 
+    /**
+     * @internal
+     */
     public function write(string $buffer): void
     {
-        if ($this->closed) {
-            throw new LogicException('This connection is closed, create new one.');
-        }
+        $socket = $this->socket();
 
         try {
-            $this->socket->write($buffer);
+            $socket->write($buffer);
         } catch (Throwable $e) {
             $this->closed = true;
 
@@ -92,9 +117,15 @@ final class Connection
         }
     }
 
-    public function read(): ?Message
+    protected function consume(?float $timeout = 0): ?Message
     {
-        $socket = $this->socket;
+        $deadline = microtime(true) + ($timeout ?? 0);
+
+        $socket = $this->socket();
+
+        if (false === $socket->selectRead($timeout)) {
+            return null;
+        }
 
         $buffer = new ByteBuffer($socket->read(self::BYTES_SIZE + self::BYTES_TYPE));
         $size = $buffer->consumeUint32();
@@ -105,14 +136,21 @@ final class Connection
         if (self::TYPE_RESPONSE === $type) {
             $response = $buffer->consume($size - self::BYTES_TYPE);
 
+            $isInternalMessage = false;
             if (self::OK === $response || self::CLOSE_WAIT === $response) {
-                return null;
+                $isInternalMessage = true;
             }
 
             if (self::HEARTBEAT === $response) {
                 $socket->write('NOP'.PHP_EOL);
 
-                return null;
+                $isInternalMessage = true;
+            }
+
+            if ($isInternalMessage) {
+                return $this->consume(
+                    ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime
+                );
             }
 
             throw new LogicException(sprintf('Unexpected response from nsq: "%s"', $response));
@@ -132,5 +170,18 @@ final class Connection
         $body = $buffer->consume($size - self::BYTES_TYPE - self::BYTES_TIMESTAMP - self::BYTES_ATTEMPTS - self::BYTES_ID);
 
         return new Message($timestamp, $attempts, $id, $body);
+    }
+
+    private function socket(): Socket
+    {
+        if ($this->closed) {
+            throw new LogicException('This connection is closed, create new one.');
+        }
+
+        if (null === $this->socket) {
+            $this->connect();
+        }
+
+        return $this->socket;
     }
 }

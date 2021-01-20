@@ -5,28 +5,19 @@ declare(strict_types=1);
 namespace Nsq;
 
 use Generator;
-use LogicException;
 
-final class Subscriber
+final class Subscriber extends Reader
 {
-    private Reader $reader;
-
-    public function __construct(Reader $reader)
-    {
-        $this->reader = $reader;
-    }
-
     /**
      * @psalm-return Generator<int, Envelope|null, true|null, void>
      */
     public function subscribe(string $topic, string $channel, ?float $timeout = 0): Generator
     {
-        $reader = $this->reader;
-        $reader->sub($topic, $channel);
-        $reader->rdy(1);
+        $this->sub($topic, $channel);
+        $this->rdy(1);
 
         while (true) {
-            $message = $reader->consume($timeout);
+            $message = $this->consume($timeout);
 
             if (null === $message) {
                 if (true === yield null) {
@@ -36,39 +27,13 @@ final class Subscriber
                 continue;
             }
 
-            $finished = false;
-            $envelop = new Envelope(
-                $message,
-                static function () use ($reader, $message, &$finished): void {
-                    if ($finished) {
-                        throw new LogicException('Can\'t ack, message already finished.');
-                    }
-
-                    $finished = true;
-
-                    $reader->fin($message->id);
-                },
-                static function (int $timeout) use ($reader, $message, &$finished): void {
-                    if ($finished) {
-                        throw new LogicException('Can\'t retry, message already finished.');
-                    }
-
-                    $finished = true;
-
-                    $reader->req($message->id, $timeout);
-                },
-                static function () use ($reader, $message): void {
-                    $reader->touch($message->id);
-                },
-            );
-
-            if (true === yield $envelop) {
+            if (true === yield new Envelope($message, $this)) {
                 break;
             }
 
-            $reader->rdy(1);
+            $this->rdy(1);
         }
 
-        $reader->close();
+        $this->disconnect();
     }
 }

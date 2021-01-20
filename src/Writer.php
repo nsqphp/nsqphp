@@ -10,15 +10,8 @@ use function pack;
 use function sprintf;
 use const PHP_EOL;
 
-final class Writer
+final class Writer extends Connection
 {
-    private Connection $connection;
-
-    public function __construct(Connection $connection)
-    {
-        $this->connection = $connection;
-    }
-
     /**
      * @psalm-suppress PossiblyFalseOperand
      */
@@ -28,8 +21,8 @@ final class Writer
 
         $buffer = 'PUB '.$topic.PHP_EOL.$size.$body;
 
-        $this->connection->write($buffer);
-        $this->connection->read();
+        $this->write($buffer);
+        $this->consume();
     }
 
     /**
@@ -49,8 +42,8 @@ final class Writer
 
         $buffer = 'MPUB '.$topic.PHP_EOL.$size.$num.$mb;
 
-        $this->connection->write($buffer);
-        $this->connection->read();
+        $this->write($buffer);
+        $this->consume();
     }
 
     /**
@@ -62,7 +55,7 @@ final class Writer
 
         $buffer = sprintf('DPUB %s %s', $topic, $deferTime).PHP_EOL.$size.$body;
 
-        $this->connection->write($buffer);
-        $this->connection->read();
+        $this->write($buffer);
+        $this->consume();
     }
 }

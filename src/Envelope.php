@@ -4,48 +4,51 @@ declare(strict_types=1);
 
 namespace Nsq;
 
-/**
- * @psalm-immutable
- */
+use LogicException;
+
 final class Envelope
 {
+    /**
+     * @psalm-readonly
+     */
     public Message $message;
 
-    /**
-     * @var callable
-     */
-    private $acknowledge;
+    private bool $finished = false;
 
-    /**
-     * @var callable
-     */
-    private $requeue;
+    private Reader $connection;
 
-    /**
-     * @var callable
-     */
-    private $touching;
-
-    public function __construct(Message $message, callable $ack, callable $req, callable $touch)
+    public function __construct(Message $message, Reader $connection)
     {
         $this->message = $message;
-        $this->acknowledge = $ack;
-        $this->requeue = $req;
-        $this->touching = $touch;
+        $this->connection = $connection;
     }
 
-    public function ack(): void
+    public function finish(): void
     {
-        \call_user_func($this->acknowledge);
+        if ($this->finished) {
+            throw new LogicException('Can\'t finish message as it already finished.');
+        }
+
+        $this->connection->fin($this->message->id);
+        $this->finished = true;
     }
 
-    public function retry(int $timeout): void
+    public function requeue(int $timeout): void
     {
-        \call_user_func($this->requeue, $timeout);
+        if ($this->finished) {
+            throw new LogicException('Can\'t requeue message as it already finished.');
+        }
+
+        $this->connection->req($this->message->id, $timeout);
+        $this->finished = true;
     }
 
     public function touch(): void
     {
-        \call_user_func($this->touching);
+        if ($this->finished) {
+            throw new LogicException('Can\'t touch message as it already finished.');
+        }
+
+        $this->connection->touch($this->message->id);
     }
 }
