@@ -36,6 +36,66 @@ Features
 - [ ] Sampling	
 - [ ] AUTH
 
+Usage
+-----
+
+### Publish
+
+```php
+use Nsq\Writer;
+
+$writer = new Writer(address: 'tcp://nsqd:4150');
+
+// Publish a message to a topic
+$writer->pub('topic', 'Simple message');
+
+// Publish multiple messages to a topic (atomically) 
+$writer->mpub('topic', [
+    'Message one',
+    'Message two',
+]);
+
+// Publish a deferred message to a topic
+$writer->dpub('topic', 5000, 'Deferred message');
+```
+
+### Subscription
+
+```php
+use Nsq\Envelope;
+use Nsq\Subscriber;
+
+$subscriber = new Subscriber(address: 'tcp://nsqd:4150');
+
+$generator = $subscriber->subscribe('topic', 'channel', timeout: 5);
+foreach ($generator as $envelope) {
+    if (null === $envelope) {
+        // No message received while timeout
+        // Good place to pcntl_signal_dispatch() or whatever
+        
+        continue;
+    }
+
+    if ($envelope instanceof Envelope) {
+        $payload = $envelope->message->body;
+
+        // handle message
+
+        $envelope->touch(); // Reset the timeout for an in-flight message        
+        $envelope->requeue(timeout: 5000); // Re-queue a message (indicate failure to process)        
+        $envelope->finish(); // Finish a message (indicate successful processing)        
+    }
+    
+    if ($stopSignalReceived) {
+        $generator->send(true); // Gracefully close connection
+    }
+}
+```
+
+### Integrations
+
+- [Symfony](https://github.com/nsqphp/NsqBundle)
+
 License:
 --------
 
