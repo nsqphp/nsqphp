@@ -23,6 +23,11 @@ final class Envelope
         $this->connection = $connection;
     }
 
+    public function isFinished(): bool
+    {
+        return $this->finished;
+    }
+
     public function finish(): void
     {
         if ($this->finished) {
