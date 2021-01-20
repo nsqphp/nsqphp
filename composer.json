@@ -36,17 +36,29 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "scripts": {
+        "csfix": [
+            "vendor/bin/php-cs-fixer fix"
+        ],
+        "norm": "composer normalize --no-check-lock",
+        "norm-check": "composer normalize --diff --dry-run",
         "phpcs": [
             "vendor/bin/php-cs-fixer fix --verbose --diff --dry-run"
         ],
         "phpstan": [
             "vendor/bin/phpstan analyse"
         ],
+        "phpunit": [
+            "vendor/bin/phpunit --verbose"
+        ],
         "psalm": [
             "vendor/bin/psalm"
         ],
-        "tests": [
-            "vendor/bin/phpunit --verbose"
+        "test": [
+            "@norm-check",
+            "@phpcs",
+            "@phpstan",
+            "@psalm",
+            "@phpunit"
         ]
     }
 }
