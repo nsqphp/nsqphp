@@ -26,8 +26,8 @@ Although not required, it is recommended that you install the [phpinnacle/ext-bu
 Features
 --------
 
-- [x] SUB
 - [x] PUB
+- [x] SUB
 - [ ] Feature Negotiation	
 - [ ] Discovery	
 - [ ] Backoff	
