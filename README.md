@@ -91,6 +91,10 @@ foreach ($generator as $envelope) {
     if ($stopSignalReceived) {
         $generator->send(Subscriber::STOP); // Gracefully close connection
     }
+
+    // Dynamically change timeout 
+    $generator->send(Subscriber::CHANGE_TIMEOUT);
+    $generator->send(10.0); // float required
 }
 ```
 
