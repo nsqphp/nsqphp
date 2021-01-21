@@ -13,8 +13,7 @@ class Reader extends Connection
     {
         $buffer = sprintf('SUB %s %s', $topic, $channel).PHP_EOL;
 
-        $this->write($buffer);
-        $this->consume();
+        $this->send($buffer)->expectResponse(self::OK);
     }
 
     /**
@@ -22,7 +21,7 @@ class Reader extends Connection
      */
     public function rdy(int $count): void
     {
-        $this->write('RDY '.$count.PHP_EOL);
+        $this->send('RDY '.$count.PHP_EOL);
     }
 
     /**
@@ -30,7 +29,7 @@ class Reader extends Connection
      */
     public function fin(string $id): void
     {
-        $this->write('FIN '.$id.PHP_EOL);
+        $this->send('FIN '.$id.PHP_EOL);
     }
 
     /**
@@ -41,7 +40,7 @@ class Reader extends Connection
      */
     public function req(string $id, int $timeout): void
     {
-        $this->write(sprintf('REQ %s %s', $id, $timeout).PHP_EOL);
+        $this->send(sprintf('REQ %s %s', $id, $timeout).PHP_EOL);
     }
 
     /**
@@ -49,6 +48,6 @@ class Reader extends Connection
      */
     public function touch(string $id): void
     {
-        $this->write('TOUCH '.$id.PHP_EOL);
+        $this->send('TOUCH '.$id.PHP_EOL);
     }
 }

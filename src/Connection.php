@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Nsq;
 
-use LogicException;
 use PHPinnacle\Buffer\ByteBuffer;
 use Socket\Raw\Factory;
 use Socket\Raw\Socket;
 use Throwable;
 use function json_encode;
-use function microtime;
 use function pack;
 use function sprintf;
 use const JSON_FORCE_OBJECT;
@@ -22,22 +20,22 @@ use const PHP_EOL;
  */
 abstract class Connection
 {
-    private const OK = 'OK';
-    private const HEARTBEAT = '_heartbeat_';
-    private const CLOSE_WAIT = 'CLOSE_WAIT';
-    private const TYPE_RESPONSE = 0;
-    private const TYPE_ERROR = 1;
-    private const TYPE_MESSAGE = 2;
-    private const BYTES_SIZE = 4;
-    private const BYTES_TYPE = 4;
-    private const BYTES_ATTEMPTS = 2;
-    private const BYTES_TIMESTAMP = 8;
-    private const BYTES_ID = 16;
+    protected const OK = 'OK';
+    protected const HEARTBEAT = '_heartbeat_';
+    protected const CLOSE_WAIT = 'CLOSE_WAIT';
+    protected const TYPE_RESPONSE = 0;
+    protected const TYPE_ERROR = 1;
+    protected const TYPE_MESSAGE = 2;
+    protected const BYTES_SIZE = 4;
+    protected const BYTES_TYPE = 4;
+    protected const BYTES_ATTEMPTS = 2;
+    protected const BYTES_TIMESTAMP = 8;
+    protected const BYTES_ID = 16;
     private const MAGIC_V2 = '  V2';
 
     public ?Socket $socket = null;
 
-    public bool $closed = false;
+    private bool $closed = false;
 
     private Config $config;
 
@@ -65,8 +63,7 @@ abstract class Connection
         }
 
         try {
-            $this->write('CLS'.PHP_EOL);
-            $this->consume(); // receive CLOSE_WAIT
+            $this->send('CLS'.PHP_EOL)->expectResponse(self::CLOSE_WAIT);
 
             if (null !== $this->socket) {
                 $this->socket->close();
@@ -76,6 +73,11 @@ abstract class Connection
         }
 
         $this->closed = true;
+    }
+
+    public function isClosed(): bool
+    {
+        return $this->closed;
     }
 
     /**
@@ -101,10 +103,7 @@ abstract class Connection
         return 'AUTH'.PHP_EOL.$size.$secret;
     }
 
-    /**
-     * @internal
-     */
-    public function write(string $buffer): void
+    protected function send(string $buffer): self
     {
         $socket = $this->socket();
 
@@ -115,67 +114,50 @@ abstract class Connection
 
             throw $e;
         }
+
+        return $this;
     }
 
-    protected function consume(?float $timeout = 0): ?Message
+    protected function receive(float $timeout = 0): ?ByteBuffer
     {
-        $deadline = microtime(true) + ($timeout ?? 0);
-
         $socket = $this->socket();
 
         if (false === $socket->selectRead($timeout)) {
             return null;
         }
 
-        $buffer = new ByteBuffer($socket->read(self::BYTES_SIZE + self::BYTES_TYPE));
-        $size = $buffer->consumeUint32();
-        $type = $buffer->consumeUint32();
+        $size = (new ByteBuffer($socket->read(self::BYTES_SIZE)))->consumeUint32();
 
-        $buffer->append($socket->read($size - self::BYTES_TYPE));
+        return new ByteBuffer($socket->read($size));
+    }
 
-        if (self::TYPE_RESPONSE === $type) {
-            $response = $buffer->consume($size - self::BYTES_TYPE);
-
-            $isInternalMessage = false;
-            if (self::OK === $response || self::CLOSE_WAIT === $response) {
-                $isInternalMessage = true;
-            }
-
-            if (self::HEARTBEAT === $response) {
-                $socket->write('NOP'.PHP_EOL);
-
-                $isInternalMessage = true;
-            }
-
-            if ($isInternalMessage) {
-                return $this->consume(
-                    ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime
-                );
-            }
-
-            throw new LogicException(sprintf('Unexpected response from nsq: "%s"', $response));
+    protected function expectResponse(string $expected): void
+    {
+        $buffer = $this->receive(0.1);
+        if (null === $buffer) {
+            throw new Exception('Success response was expected, but null received.');
         }
+
+        $type = $buffer->consumeUint32();
+        $response = $buffer->flush();
 
         if (self::TYPE_ERROR === $type) {
-            throw new LogicException(sprintf('NSQ return error: "%s"', $socket->read($size)));
+            throw new Exception($response);
         }
 
-        if (self::TYPE_MESSAGE !== $type) {
-            throw new LogicException(sprintf('Expecting "%s" type, but NSQ return: "%s"', self::TYPE_MESSAGE, $type));
+        if (self::TYPE_RESPONSE !== $type) {
+            throw new Exception(sprintf('"%s" type expected, but "%s" received.', self::TYPE_RESPONSE, $type));
         }
 
-        $timestamp = $buffer->consumeInt64();
-        $attempts = $buffer->consumeUint16();
-        $id = $buffer->consume(self::BYTES_ID);
-        $body = $buffer->consume($size - self::BYTES_TYPE - self::BYTES_TIMESTAMP - self::BYTES_ATTEMPTS - self::BYTES_ID);
-
-        return new Message($timestamp, $attempts, $id, $body);
+        if ($expected !== $response) {
+            throw new Exception(sprintf('"%s" response expected, but "%s" received.', $expected, $response));
+        }
     }
 
     private function socket(): Socket
     {
         if ($this->closed) {
-            throw new LogicException('This connection is closed, create new one.');
+            throw new Exception('This connection is closed, create new one.');
         }
 
         if (null === $this->socket) {
