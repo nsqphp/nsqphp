@@ -71,13 +71,6 @@ $subscriber = new Subscriber(address: 'tcp://nsqd:4150');
 
 $generator = $subscriber->subscribe('topic', 'channel', timeout: 5);
 foreach ($generator as $envelope) {
-    if (null === $envelope) {
-        // No message received while timeout
-        // Good place to pcntl_signal_dispatch() or whatever
-        
-        continue;
-    }
-
     if ($envelope instanceof Envelope) {
         $payload = $envelope->message->body;
 
@@ -88,13 +81,18 @@ foreach ($generator as $envelope) {
         $envelope->finish(); // Finish a message (indicate successful processing)        
     }
     
-    if ($stopSignalReceived) {
-        $generator->send(Subscriber::STOP); // Gracefully close connection
-    }
+    // In case of nothing received during timeout generator will return NULL
+    // Here we can do something between messages, like pcntl_signal_dispatch()
+    
+    // We can also communicate with generator through send
+    // for example:
 
     // Dynamically change timeout 
     $generator->send(Subscriber::CHANGE_TIMEOUT);
     $generator->send(10.0); // float required
+
+    // Gracefully close connection (loop will be ended)
+    $generator->send(Subscriber::STOP); 
 }
 ```
 
