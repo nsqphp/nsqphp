@@ -22,16 +22,21 @@ use const PHP_EOL;
  */
 abstract class Connection
 {
-    public ?Socket $socket = null;
+    private string $address;
 
-    protected LoggerInterface $logger;
+    private ?Socket $socket = null;
 
     private bool $closed = false;
 
-    private string $address;
+    private LoggerInterface $logger;
 
     /**
-     * @var array{client_id: string, hostname: string, user_agent: string}
+     * @var array{
+     *             client_id: string,
+     *             hostname: string,
+     *             user_agent: string,
+     *             heartbeat_interval: int|null,
+     *             }
      */
     private array $features;
 
@@ -41,6 +46,7 @@ abstract class Connection
         string $clientId = null,
         string $hostname = null,
         string $userAgent = null,
+        int $heartbeatInterval = null,
     ) {
         $this->address = $address;
 
@@ -48,6 +54,7 @@ abstract class Connection
             'client_id' => $clientId ?? '',
             'hostname' => $hostname ?? (static fn (mixed $host): string => \is_string($host) ? $host : '')(gethostname()),
             'user_agent' => $userAgent ?? 'nsqphp/'.InstalledVersions::getPrettyVersion('nsq/nsq'),
+            'heartbeat_interval' => $heartbeatInterval,
         ];
 
         $this->logger = $logger ?? new NullLogger();

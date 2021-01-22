@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Nsq\Message;
 use Nsq\Consumer;
-use Nsq\Subscriber;
-use Nsq\Producer;
 use Nsq\Exception;
+use Nsq\Message;
+use Nsq\Producer;
+use Nsq\Subscriber;
 use PHPUnit\Framework\TestCase;
 
 final class NsqTest extends TestCase
@@ -16,7 +16,14 @@ final class NsqTest extends TestCase
         $producer = new Producer('tcp://localhost:4150');
         $producer->pub(__FUNCTION__, __FUNCTION__);
 
-        $consumer = new Consumer('tcp://localhost:4150');
+        $consumer = new Consumer(
+            'tcp://localhost:4150',
+            null,
+            null,
+            null,
+            null,
+            1000,
+        );
         $subscriber = new Subscriber($consumer);
         $generator = $subscriber->subscribe(__FUNCTION__, __FUNCTION__, 1);
 
