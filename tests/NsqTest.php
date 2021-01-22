@@ -70,6 +70,7 @@ final class NsqTest extends TestCase
         $envelope = $generator->current();
         self::assertInstanceOf(Message::class, $envelope);
         self::assertSame('Deferred message.', $envelope->body);
+        $envelope->touch();
         $envelope->finish();
 
         self::assertFalse($reader->isClosed());
