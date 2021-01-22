@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Nsq\Envelope;
+use Nsq\Reader;
 use Nsq\Subscriber;
 use Nsq\Writer;
 use Nsq\Exception;
@@ -15,7 +16,8 @@ final class NsqTest extends TestCase
         $writer = new Writer('tcp://localhost:4150');
         $writer->pub(__FUNCTION__, __FUNCTION__);
 
-        $subscriber = new Subscriber('tcp://localhost:4150');
+        $reader = new Reader('tcp://localhost:4150');
+        $subscriber = new Subscriber($reader);
         $generator = $subscriber->subscribe(__FUNCTION__, __FUNCTION__, 1);
 
         /** @var null|Envelope $envelope */
@@ -70,9 +72,9 @@ final class NsqTest extends TestCase
         static::assertSame('Deferred message.', $envelope->message->body);
         $envelope->finish();
 
-        static::assertFalse($subscriber->isClosed());
+        static::assertFalse($reader->isClosed());
         $generator->send(Subscriber::STOP);
-        static::assertTrue($subscriber->isClosed());
+        static::assertTrue($reader->isClosed());
     }
 
     /**

@@ -50,4 +50,9 @@ class Reader extends Connection
     {
         $this->send('TOUCH '.$id.PHP_EOL);
     }
+
+    public function nop(): void
+    {
+        $this->send('NOP'.PHP_EOL);
+    }
 }

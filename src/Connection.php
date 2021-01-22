@@ -122,7 +122,7 @@ abstract class Connection
         return $this;
     }
 
-    protected function receive(float $timeout = 0): ?Response
+    public function receive(float $timeout = 0): ?Response
     {
         $socket = $this->socket();
 

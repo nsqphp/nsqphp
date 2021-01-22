@@ -9,24 +9,31 @@ use function get_debug_type;
 use function microtime;
 use function sprintf;
 
-final class Subscriber extends Reader
+final class Subscriber
 {
     public const STOP = 0;
     public const CHANGE_TIMEOUT = 1;
+
+    private Reader $reader;
+
+    public function __construct(Reader $reader)
+    {
+        $this->reader = $reader;
+    }
 
     /**
      * @psalm-return Generator<int, Envelope|null, int|float|null, void>
      */
     public function subscribe(string $topic, string $channel, float $timeout = 0): Generator
     {
-        $this->sub($topic, $channel);
+        $this->reader->sub($topic, $channel);
 
         while (true) {
-            $this->rdy(1);
+            $this->reader->rdy(1);
 
             $message = $this->consume($timeout);
 
-            $command = yield null === $message ? null : new Envelope($message, $this);
+            $command = yield null === $message ? null : new Envelope($message, $this->reader);
 
             if (self::STOP === $command) {
                 break;
@@ -43,20 +50,20 @@ final class Subscriber extends Reader
             }
         }
 
-        $this->disconnect();
+        $this->reader->disconnect();
     }
 
     private function consume(float $timeout): ?Message
     {
         $deadline = microtime(true) + $timeout;
 
-        $response = $this->receive($timeout);
+        $response = $this->reader->receive($timeout);
         if (null === $response) {
             return null;
         }
 
         if ($response->isHeartBeat()) {
-            $this->send('NOP'.PHP_EOL);
+            $this->reader->nop();
 
             return $this->consume(
                 ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime
