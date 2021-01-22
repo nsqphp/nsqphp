@@ -14,6 +14,7 @@
         "php": ">=7.4",
         "ext-json": "*",
         "clue/socket-raw": "^1.5",
+        "composer/semver": "^3.2",
         "phpinnacle/buffer": "^1.2"
     },
     "require-dev": {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nsq;
 
+use Composer\InstalledVersions;
 use PHPinnacle\Buffer\ByteBuffer;
 use Socket\Raw\Factory;
 use Socket\Raw\Socket;
@@ -31,7 +32,6 @@ abstract class Connection
     protected const BYTES_ATTEMPTS = 2;
     protected const BYTES_TIMESTAMP = 8;
     protected const BYTES_ID = 16;
-    private const MAGIC_V2 = '  V2';
 
     public ?Socket $socket = null;
 
@@ -39,18 +39,35 @@ abstract class Connection
 
     private Config $config;
 
-    public function __construct(string $address)
-    {
+    /**
+     * @var array{client_id: string, hostname: string, user_agent: string}
+     */
+    private array $features;
+
+    public function __construct(
+        string $address,
+        string $clientId = null,
+        string $hostname = null,
+        string $userAgent = null
+    ) {
         $this->config = new Config($address);
+
+        $this->features = [
+            'client_id' => $clientId ?? '',
+            'hostname' => $hostname ?? '',
+            'user_agent' => $userAgent ?? 'nsqphp/'.InstalledVersions::getPrettyVersion('nsq/nsq'),
+        ];
     }
 
-    /**
-     * @psalm-suppress UnsafeInstantiation
-     */
     public function connect(): void
     {
         $this->socket = (new Factory())->createClient($this->config->address);
-        $this->socket->write(self::MAGIC_V2);
+        $this->send('  V2');
+
+        $body = json_encode($this->features, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
+        $size = pack('N', \strlen($body));
+
+        $this->send('IDENTIFY '.PHP_EOL.$size.$body)->expectResponse(self::OK);
     }
 
     /**
@@ -78,19 +95,6 @@ abstract class Connection
     public function isClosed(): bool
     {
         return $this->closed;
-    }
-
-    /**
-     * @psalm-param array<string, string|numeric> $arr
-     *
-     * @psalm-suppress PossiblyFalseOperand
-     */
-    protected function identify(array $arr): string
-    {
-        $body = json_encode($arr, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
-        $size = pack('N', \strlen($body));
-
-        return 'IDENTIFY '.PHP_EOL.$size.$body;
     }
 
     /**
