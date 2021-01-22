@@ -50,40 +50,19 @@ final class Subscriber extends Reader
     {
         $deadline = microtime(true) + $timeout;
 
-        $buffer = $this->receive($timeout);
-        if (null === $buffer) {
+        $response = $this->receive($timeout);
+        if (null === $response) {
             return null;
         }
 
-        $type = $buffer->consumeUint32();
+        if ($response->isHeartBeat()) {
+            $this->send('NOP'.PHP_EOL);
 
-        if (self::TYPE_RESPONSE === $type) {
-            $response = $buffer->flush();
-
-            if (self::HEARTBEAT === $response) {
-                $this->send('NOP'.PHP_EOL);
-
-                return $this->consume(
-                    ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime
-                );
-            }
-
-            throw new Exception(sprintf('Unexpected response: %s', $response));
+            return $this->consume(
+                ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime
+            );
         }
 
-        if (self::TYPE_ERROR === $type) {
-            throw new Exception(sprintf('NSQ return error: "%s"', $buffer->flush()));
-        }
-
-        if (self::TYPE_MESSAGE !== $type) {
-            throw new Exception(sprintf('Expecting "%s" type, but NSQ return: "%s"', self::TYPE_MESSAGE, $type));
-        }
-
-        $timestamp = $buffer->consumeInt64();
-        $attempts = $buffer->consumeUint16();
-        $id = $buffer->consume(self::BYTES_ID);
-        $body = $buffer->flush();
-
-        return new Message($timestamp, $attempts, $id, $body);
+        return $response->toMessage();
     }
 }

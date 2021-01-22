@@ -13,7 +13,7 @@ class Reader extends Connection
     {
         $buffer = sprintf('SUB %s %s', $topic, $channel).PHP_EOL;
 
-        $this->send($buffer)->expectResponse(self::OK);
+        $this->send($buffer)->getResponse()->okOrFail();
     }
 
     /**

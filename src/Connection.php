@@ -13,7 +13,6 @@ use Socket\Raw\Socket;
 use Throwable;
 use function json_encode;
 use function pack;
-use function sprintf;
 use const JSON_FORCE_OBJECT;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
@@ -23,18 +22,6 @@ use const PHP_EOL;
  */
 abstract class Connection
 {
-    protected const OK = 'OK';
-    protected const HEARTBEAT = '_heartbeat_';
-    protected const CLOSE_WAIT = 'CLOSE_WAIT';
-    protected const TYPE_RESPONSE = 0;
-    protected const TYPE_ERROR = 1;
-    protected const TYPE_MESSAGE = 2;
-    protected const BYTES_SIZE = 4;
-    protected const BYTES_TYPE = 4;
-    protected const BYTES_ATTEMPTS = 2;
-    protected const BYTES_TIMESTAMP = 8;
-    protected const BYTES_ID = 16;
-
     public ?Socket $socket = null;
 
     protected LoggerInterface $logger;
@@ -76,7 +63,7 @@ abstract class Connection
 
         $this->logger->info('Feature Negotiation: '.http_build_query($this->features));
 
-        $this->send('IDENTIFY '.PHP_EOL.$size.$body)->expectResponse(self::OK);
+        $this->send('IDENTIFY '.PHP_EOL.$size.$body)->getResponse()->okOrFail();
     }
 
     /**
@@ -89,7 +76,7 @@ abstract class Connection
         }
 
         try {
-            $this->send('CLS'.PHP_EOL)->expectResponse(self::CLOSE_WAIT);
+            $this->send('CLS'.PHP_EOL);
 
             if (null !== $this->socket) {
                 $this->socket->close();
@@ -135,7 +122,7 @@ abstract class Connection
         return $this;
     }
 
-    protected function receive(float $timeout = 0): ?ByteBuffer
+    protected function receive(float $timeout = 0): ?Response
     {
         $socket = $this->socket();
 
@@ -143,32 +130,20 @@ abstract class Connection
             return null;
         }
 
-        $size = (new ByteBuffer($socket->read(self::BYTES_SIZE)))->consumeUint32();
+        $size = (new ByteBuffer($socket->read(Bytes::BYTES_SIZE)))->consumeUint32();
 
-        return new ByteBuffer($socket->read($size));
+        return new Response(new ByteBuffer($socket->read($size)));
     }
 
-    protected function expectResponse(string $expected): void
+    protected function getResponse(): Response
     {
-        $buffer = $this->receive(0.1);
-        if (null === $buffer) {
-            throw new Exception('Success response was expected, but null received.');
+        $response = $this->receive(0.1);
+
+        if (null === $response) {
+            throw new Exception('Response was expected, but null received.');
         }
 
-        $type = $buffer->consumeUint32();
-        $response = $buffer->flush();
-
-        if (self::TYPE_ERROR === $type) {
-            throw new Exception($response);
-        }
-
-        if (self::TYPE_RESPONSE !== $type) {
-            throw new Exception(sprintf('"%s" type expected, but "%s" received.', self::TYPE_RESPONSE, $type));
-        }
-
-        if ($expected !== $response) {
-            throw new Exception(sprintf('"%s" response expected, but "%s" received.', $expected, $response));
-        }
+        return $response;
     }
 
     private function socket(): Socket
