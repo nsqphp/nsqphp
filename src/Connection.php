@@ -41,7 +41,7 @@ abstract class Connection
 
     private bool $closed = false;
 
-    private Config $config;
+    private string $address;
 
     /**
      * @var array{client_id: string, hostname: string, user_agent: string}
@@ -55,7 +55,7 @@ abstract class Connection
         string $hostname = null,
         string $userAgent = null
     ) {
-        $this->config = new Config($address);
+        $this->address = $address;
 
         $this->features = [
             'client_id' => $clientId ?? '',
@@ -68,7 +68,7 @@ abstract class Connection
 
     public function connect(): void
     {
-        $this->socket = (new Factory())->createClient($this->config->address);
+        $this->socket = (new Factory())->createClient($this->address);
         $this->send('  V2');
 
         $body = json_encode($this->features, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
