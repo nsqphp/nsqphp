@@ -40,7 +40,7 @@ abstract class Connection
         LoggerInterface $logger = null,
         string $clientId = null,
         string $hostname = null,
-        string $userAgent = null
+        string $userAgent = null,
     ) {
         $this->address = $address;
 
