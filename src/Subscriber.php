@@ -6,7 +6,6 @@ namespace Nsq;
 
 use Generator;
 use function get_debug_type;
-use function microtime;
 use function sprintf;
 
 final class Subscriber
@@ -31,7 +30,7 @@ final class Subscriber
         while (true) {
             $this->reader->rdy(1);
 
-            $command = yield $this->consume($timeout);
+            $command = yield $this->reader->consume($timeout);
 
             if (self::STOP === $command) {
                 break;
@@ -49,25 +48,5 @@ final class Subscriber
         }
 
         $this->reader->disconnect();
-    }
-
-    private function consume(float $timeout): ?Message
-    {
-        $deadline = microtime(true) + $timeout;
-
-        $response = $this->reader->receive($timeout);
-        if (null === $response) {
-            return null;
-        }
-
-        if ($response->isHeartBeat()) {
-            $this->reader->nop();
-
-            return $this->consume(
-                ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime
-            );
-        }
-
-        return $response->toMessage($this->reader);
     }
 }
