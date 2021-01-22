@@ -64,21 +64,21 @@ $writer->dpub('topic', 5000, 'Deferred message');
 ### Subscription
 
 ```php
-use Nsq\Envelope;
+use Nsq\Message;
 use Nsq\Subscriber;
 
 $subscriber = new Subscriber(address: 'tcp://nsqd:4150');
 
 $generator = $subscriber->subscribe('topic', 'channel', timeout: 5);
-foreach ($generator as $envelope) {
-    if ($envelope instanceof Envelope) {
-        $payload = $envelope->message->body;
+foreach ($generator as $message) {
+    if ($message instanceof Message) {
+        $payload = $message->body;
 
         // handle message
 
-        $envelope->touch(); // Reset the timeout for an in-flight message        
-        $envelope->requeue(timeout: 5000); // Re-queue a message (indicate failure to process)        
-        $envelope->finish(); // Finish a message (indicate successful processing)        
+        $message->touch(); // Reset the timeout for an in-flight message        
+        $message->requeue(timeout: 5000); // Re-queue a message (indicate failure to process)        
+        $message->finish(); // Finish a message (indicate successful processing)        
     }
     
     // In case of nothing received during timeout generator will return NULL

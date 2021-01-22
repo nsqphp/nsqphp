@@ -2,8 +2,7 @@
 
 declare(strict_types=1);
 
-use Nsq\Envelope;
-use Nsq\Reader;
+use Nsq\Message;
 use Nsq\Subscriber;
 use Nsq\Writer;
 use Nsq\Exception;
@@ -16,15 +15,15 @@ final class NsqTest extends TestCase
         $writer = new Writer('tcp://localhost:4150');
         $writer->pub(__FUNCTION__, __FUNCTION__);
 
-        $reader = new Reader('tcp://localhost:4150');
+        $reader = new \Nsq\Reader('tcp://localhost:4150');
         $subscriber = new Subscriber($reader);
         $generator = $subscriber->subscribe(__FUNCTION__, __FUNCTION__, 1);
 
-        /** @var null|Envelope $envelope */
+        /** @var null|Message $envelope */
         $envelope = $generator->current();
 
-        static::assertInstanceOf(Envelope::class, $envelope);
-        static::assertSame(__FUNCTION__, $envelope->message->body);
+        static::assertInstanceOf(Message::class, $envelope);
+        static::assertSame(__FUNCTION__, $envelope->body);
         $envelope->finish();
 
         $generator->next();
@@ -36,40 +35,40 @@ final class NsqTest extends TestCase
         ]);
 
         $generator->next();
-        /** @var null|Envelope $envelope */
+        /** @var null|Message $envelope */
         $envelope = $generator->current();
-        static::assertInstanceOf(Envelope::class, $envelope);
-        static::assertSame('First mpub message.', $envelope->message->body);
+        static::assertInstanceOf(Message::class, $envelope);
+        static::assertSame('First mpub message.', $envelope->body);
         $envelope->finish();
 
         $generator->next();
-        /** @var null|Envelope $envelope */
+        /** @var null|Message $envelope */
         $envelope = $generator->current();
-        static::assertInstanceOf(Envelope::class, $envelope);
-        static::assertSame('Second mpub message.', $envelope->message->body);
+        static::assertInstanceOf(Message::class, $envelope);
+        static::assertSame('Second mpub message.', $envelope->body);
         $envelope->requeue(0);
 
         $generator->next();
-        /** @var null|Envelope $envelope */
+        /** @var null|Message $envelope */
         $envelope = $generator->current();
-        static::assertInstanceOf(Envelope::class, $envelope);
-        static::assertSame('Second mpub message.', $envelope->message->body);
+        static::assertInstanceOf(Message::class, $envelope);
+        static::assertSame('Second mpub message.', $envelope->body);
         $envelope->finish();
 
         $writer->dpub(__FUNCTION__, 2000, 'Deferred message.');
 
         $generator->next();
-        /** @var null|Envelope $envelope */
+        /** @var null|Message $envelope */
         $envelope = $generator->current();
         static::assertNull($envelope);
 
         $generator->send(Subscriber::CHANGE_TIMEOUT);
         $generator->send(10.0);
 
-        /** @var null|Envelope $envelope */
+        /** @var null|Message $envelope */
         $envelope = $generator->current();
-        static::assertInstanceOf(Envelope::class, $envelope);
-        static::assertSame('Deferred message.', $envelope->message->body);
+        static::assertInstanceOf(Message::class, $envelope);
+        static::assertSame('Deferred message.', $envelope->body);
         $envelope->finish();
 
         static::assertFalse($reader->isClosed());

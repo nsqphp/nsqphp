@@ -22,7 +22,7 @@ final class Subscriber
     }
 
     /**
-     * @psalm-return Generator<int, Envelope|null, int|float|null, void>
+     * @psalm-return Generator<int, Message|null, int|float|null, void>
      */
     public function subscribe(string $topic, string $channel, float $timeout = 0): Generator
     {
@@ -31,9 +31,7 @@ final class Subscriber
         while (true) {
             $this->reader->rdy(1);
 
-            $message = $this->consume($timeout);
-
-            $command = yield null === $message ? null : new Envelope($message, $this->reader);
+            $command = yield $this->consume($timeout);
 
             if (self::STOP === $command) {
                 break;
@@ -70,6 +68,6 @@ final class Subscriber
             );
         }
 
-        return $response->toMessage();
+        return $response->toMessage($this->reader);
     }
 }
