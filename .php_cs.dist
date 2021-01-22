@@ -12,6 +12,7 @@ return (new PhpCsFixer\Config())
         'php_unit_internal_class' => false,
         'php_unit_test_class_requires_covers' => false,
         'yoda_style' => true,
+        'php_unit_test_case_static_method_calls'=> ['call_type' => 'self'],
     ])
     ->setFinder(
         PhpCsFixer\Finder::create()
