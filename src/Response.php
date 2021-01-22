@@ -44,7 +44,7 @@ final class Response
         return self::TYPE_RESPONSE === $this->type && self::HEARTBEAT === $this->buffer->bytes();
     }
 
-    public function toMessage(Reader $reader): Message
+    public function toMessage(Consumer $reader): Message
     {
         if (self::TYPE_MESSAGE !== $this->type) {
             throw new Exception(sprintf('Expecting "%s" type, but NSQ return: "%s"', self::TYPE_MESSAGE, $this->type));

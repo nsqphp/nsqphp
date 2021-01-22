@@ -28,19 +28,19 @@ final class Message
      */
     public string $body;
 
-    public function __construct(int $timestamp, int $attempts, string $id, string $body, Reader $reader)
+    private bool $finished = false;
+
+    private Consumer $consumer;
+
+    public function __construct(int $timestamp, int $attempts, string $id, string $body, Consumer $consumer)
     {
         $this->timestamp = $timestamp;
         $this->attempts = $attempts;
         $this->id = $id;
         $this->body = $body;
 
-        $this->connection = $reader;
+        $this->consumer = $consumer;
     }
-
-    private bool $finished = false;
-
-    private Reader $connection;
 
     public function isFinished(): bool
     {
@@ -53,7 +53,7 @@ final class Message
             throw new LogicException('Can\'t finish message as it already finished.');
         }
 
-        $this->connection->fin($this->id);
+        $this->consumer->fin($this->id);
         $this->finished = true;
     }
 
@@ -63,7 +63,7 @@ final class Message
             throw new LogicException('Can\'t requeue message as it already finished.');
         }
 
-        $this->connection->req($this->id, $timeout);
+        $this->consumer->req($this->id, $timeout);
         $this->finished = true;
     }
 
@@ -73,6 +73,6 @@ final class Message
             throw new LogicException('Can\'t touch message as it already finished.');
         }
 
-        $this->connection->touch($this->id);
+        $this->consumer->touch($this->id);
     }
 }

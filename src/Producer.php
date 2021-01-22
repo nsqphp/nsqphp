@@ -10,7 +10,7 @@ use function pack;
 use function sprintf;
 use const PHP_EOL;
 
-final class Writer extends Connection
+final class Producer extends Connection
 {
     /**
      * @psalm-suppress PossiblyFalseOperand

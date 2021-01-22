@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Nsq;
 
-class Reader extends Connection
+class Consumer extends Connection
 {
     /**
      * Subscribe to a topic/channel.

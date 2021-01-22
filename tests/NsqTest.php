@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Nsq\Message;
-use Nsq\Reader;
+use Nsq\Consumer;
 use Nsq\Subscriber;
-use Nsq\Writer;
+use Nsq\Producer;
 use Nsq\Exception;
 use PHPUnit\Framework\TestCase;
 
@@ -13,10 +13,10 @@ final class NsqTest extends TestCase
 {
     public function test(): void
     {
-        $writer = new Writer('tcp://localhost:4150');
+        $writer = new Producer('tcp://localhost:4150');
         $writer->pub(__FUNCTION__, __FUNCTION__);
 
-        $reader = new Reader('tcp://localhost:4150');
+        $reader = new Consumer('tcp://localhost:4150');
         $subscriber = new Subscriber($reader);
         $generator = $subscriber->subscribe(__FUNCTION__, __FUNCTION__, 1);
 
@@ -85,7 +85,7 @@ final class NsqTest extends TestCase
         $this->expectException(Exception::class);
         $this->expectExceptionMessage($exceptionMessage);
 
-        $writer = new Writer('tcp://localhost:4150');
+        $writer = new Producer('tcp://localhost:4150');
         $writer->pub($topic, $body);
     }
 

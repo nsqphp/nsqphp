@@ -14,9 +14,9 @@ final class Subscriber
     public const STOP = 0;
     public const CHANGE_TIMEOUT = 1;
 
-    private Reader $reader;
+    private Consumer $reader;
 
-    public function __construct(Reader $reader)
+    public function __construct(Consumer $reader)
     {
         $this->reader = $reader;
     }

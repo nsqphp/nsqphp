@@ -44,30 +44,32 @@ Usage
 ### Publish
 
 ```php
-use Nsq\Writer;
+use Nsq\Producer;
 
-$writer = new Writer(address: 'tcp://nsqd:4150');
+$producer = new Producer(address: 'tcp://nsqd:4150');
 
 // Publish a message to a topic
-$writer->pub('topic', 'Simple message');
+$producer->pub('topic', 'Simple message');
 
 // Publish multiple messages to a topic (atomically) 
-$writer->mpub('topic', [
+$producer->mpub('topic', [
     'Message one',
     'Message two',
 ]);
 
 // Publish a deferred message to a topic
-$writer->dpub('topic', 5000, 'Deferred message');
+$producer->dpub('topic', 5000, 'Deferred message');
 ```
 
 ### Subscription
 
 ```php
+use Nsq\Consumer;
 use Nsq\Message;
 use Nsq\Subscriber;
 
-$subscriber = new Subscriber(address: 'tcp://nsqd:4150');
+$consumer = new Consumer('tcp://nsqd:4150');
+$subscriber = new Subscriber($consumer);
 
 $generator = $subscriber->subscribe('topic', 'channel', timeout: 5);
 foreach ($generator as $message) {
