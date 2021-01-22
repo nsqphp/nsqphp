@@ -13,69 +13,69 @@ final class NsqTest extends TestCase
 {
     public function test(): void
     {
-        $writer = new Producer('tcp://localhost:4150');
-        $writer->pub(__FUNCTION__, __FUNCTION__);
+        $producer = new Producer('tcp://localhost:4150');
+        $producer->pub(__FUNCTION__, __FUNCTION__);
 
-        $reader = new Consumer('tcp://localhost:4150');
-        $subscriber = new Subscriber($reader);
+        $consumer = new Consumer('tcp://localhost:4150');
+        $subscriber = new Subscriber($consumer);
         $generator = $subscriber->subscribe(__FUNCTION__, __FUNCTION__, 1);
 
-        /** @var null|Message $envelope */
-        $envelope = $generator->current();
+        /** @var null|Message $message */
+        $message = $generator->current();
 
-        self::assertInstanceOf(Message::class, $envelope);
-        self::assertSame(__FUNCTION__, $envelope->body);
-        $envelope->finish();
+        self::assertInstanceOf(Message::class, $message);
+        self::assertSame(__FUNCTION__, $message->body);
+        $message->finish();
 
         $generator->next();
         self::assertNull($generator->current());
 
-        $writer->mpub(__FUNCTION__, [
+        $producer->mpub(__FUNCTION__, [
             'First mpub message.',
             'Second mpub message.',
         ]);
 
         $generator->next();
-        /** @var null|Message $envelope */
-        $envelope = $generator->current();
-        self::assertInstanceOf(Message::class, $envelope);
-        self::assertSame('First mpub message.', $envelope->body);
-        $envelope->finish();
+        /** @var null|Message $message */
+        $message = $generator->current();
+        self::assertInstanceOf(Message::class, $message);
+        self::assertSame('First mpub message.', $message->body);
+        $message->finish();
 
         $generator->next();
-        /** @var null|Message $envelope */
-        $envelope = $generator->current();
-        self::assertInstanceOf(Message::class, $envelope);
-        self::assertSame('Second mpub message.', $envelope->body);
-        $envelope->requeue(0);
+        /** @var null|Message $message */
+        $message = $generator->current();
+        self::assertInstanceOf(Message::class, $message);
+        self::assertSame('Second mpub message.', $message->body);
+        $message->requeue(0);
 
         $generator->next();
-        /** @var null|Message $envelope */
-        $envelope = $generator->current();
-        self::assertInstanceOf(Message::class, $envelope);
-        self::assertSame('Second mpub message.', $envelope->body);
-        $envelope->finish();
+        /** @var null|Message $message */
+        $message = $generator->current();
+        self::assertInstanceOf(Message::class, $message);
+        self::assertSame('Second mpub message.', $message->body);
+        $message->finish();
 
-        $writer->dpub(__FUNCTION__, 2000, 'Deferred message.');
+        $producer->dpub(__FUNCTION__, 2000, 'Deferred message.');
 
         $generator->next();
-        /** @var null|Message $envelope */
-        $envelope = $generator->current();
-        self::assertNull($envelope);
+        /** @var null|Message $message */
+        $message = $generator->current();
+        self::assertNull($message);
 
         $generator->send(Subscriber::CHANGE_TIMEOUT);
         $generator->send(10.0);
 
-        /** @var null|Message $envelope */
-        $envelope = $generator->current();
-        self::assertInstanceOf(Message::class, $envelope);
-        self::assertSame('Deferred message.', $envelope->body);
-        $envelope->touch();
-        $envelope->finish();
+        /** @var null|Message $message */
+        $message = $generator->current();
+        self::assertInstanceOf(Message::class, $message);
+        self::assertSame('Deferred message.', $message->body);
+        $message->touch();
+        $message->finish();
 
-        self::assertFalse($reader->isClosed());
+        self::assertFalse($consumer->isClosed());
         $generator->send(Subscriber::STOP);
-        self::assertTrue($reader->isClosed());
+        self::assertTrue($consumer->isClosed());
     }
 
     /**
@@ -86,8 +86,8 @@ final class NsqTest extends TestCase
         $this->expectException(Exception::class);
         $this->expectExceptionMessage($exceptionMessage);
 
-        $writer = new Producer('tcp://localhost:4150');
-        $writer->pub($topic, $body);
+        $producer = new Producer('tcp://localhost:4150');
+        $producer->pub($topic, $body);
     }
 
     /**
