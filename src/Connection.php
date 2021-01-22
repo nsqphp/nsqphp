@@ -46,7 +46,7 @@ abstract class Connection
 
         $this->features = [
             'client_id' => $clientId ?? '',
-            'hostname' => $hostname ?? '',
+            'hostname' => $hostname ?? (static fn (mixed $host): string => \is_string($host) ? $host : '')(gethostname()),
             'user_agent' => $userAgent ?? 'nsqphp/'.InstalledVersions::getPrettyVersion('nsq/nsq'),
         ];
 
