@@ -6,6 +6,7 @@ services:
         command: /nsqd
         ports:
             - 4150:4150
+            - 4151:4151
 
     nsqadmin:
         image: nsqio/nsq:v1.2.0
