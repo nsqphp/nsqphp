@@ -107,7 +107,7 @@ abstract class Connection
     {
         $socket = $this->socket();
 
-        $this->logger->debug('Send buffer: '.$buffer);
+        $this->logger->debug('Send buffer: '.addcslashes($buffer, PHP_EOL));
 
         try {
             $socket->write($buffer);
