@@ -57,7 +57,7 @@
         ],
         "test": [
             "@norm-check",
-            "@phpcs",
+            "@cs",
             "@phpstan",
             "@psalm",
             "@phpunit"
