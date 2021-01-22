@@ -12,6 +12,7 @@ final class Subscriber
 {
     public const STOP = 0;
     public const CHANGE_TIMEOUT = 1;
+    public const TIMEOUT = 2;
 
     private Consumer $reader;
 
@@ -21,7 +22,7 @@ final class Subscriber
     }
 
     /**
-     * @psalm-return Generator<int, Message|null, int|float|null, void>
+     * @psalm-return Generator<int, Message|float|null, int|float|null, void>
      */
     public function subscribe(string $topic, string $channel, float $timeout = 0): Generator
     {
@@ -44,6 +45,10 @@ final class Subscriber
                 }
 
                 $timeout = $newTimeout;
+            }
+
+            if (self::TIMEOUT === $command) {
+                yield $timeout;
             }
         }
 
