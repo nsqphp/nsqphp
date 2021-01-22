@@ -21,7 +21,7 @@ final class Writer extends Connection
 
         $buffer = 'PUB '.$topic.PHP_EOL.$size.$body;
 
-        $this->send($buffer)->expectResponse(self::OK);
+        $this->send($buffer)->getResponse()->okOrFail();
     }
 
     /**
@@ -41,7 +41,7 @@ final class Writer extends Connection
 
         $buffer = 'MPUB '.$topic.PHP_EOL.$size.$num.$mb;
 
-        $this->send($buffer)->expectResponse(self::OK);
+        $this->send($buffer)->getResponse()->okOrFail();
     }
 
     /**
@@ -53,6 +53,6 @@ final class Writer extends Connection
 
         $buffer = sprintf('DPUB %s %s', $topic, $deferTime).PHP_EOL.$size.$body;
 
-        $this->send($buffer)->expectResponse(self::OK);
+        $this->send($buffer)->getResponse()->okOrFail();
     }
 }
