@@ -6,6 +6,8 @@ namespace Nsq;
 
 use Composer\InstalledVersions;
 use PHPinnacle\Buffer\ByteBuffer;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Socket\Raw\Factory;
 use Socket\Raw\Socket;
 use Throwable;
@@ -35,6 +37,8 @@ abstract class Connection
 
     public ?Socket $socket = null;
 
+    protected LoggerInterface $logger;
+
     private bool $closed = false;
 
     private Config $config;
@@ -46,6 +50,7 @@ abstract class Connection
 
     public function __construct(
         string $address,
+        LoggerInterface $logger = null,
         string $clientId = null,
         string $hostname = null,
         string $userAgent = null
@@ -57,6 +62,8 @@ abstract class Connection
             'hostname' => $hostname ?? '',
             'user_agent' => $userAgent ?? 'nsqphp/'.InstalledVersions::getPrettyVersion('nsq/nsq'),
         ];
+
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function connect(): void
@@ -66,6 +73,8 @@ abstract class Connection
 
         $body = json_encode($this->features, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
         $size = pack('N', \strlen($body));
+
+        $this->logger->info('Feature Negotiation: '.http_build_query($this->features));
 
         $this->send('IDENTIFY '.PHP_EOL.$size.$body)->expectResponse(self::OK);
     }
@@ -86,7 +95,7 @@ abstract class Connection
                 $this->socket->close();
             }
         } catch (Throwable $e) {
-            // Not interested
+            $this->logger->debug($e->getMessage(), ['exception' => $e]);
         }
 
         $this->closed = true;
@@ -111,10 +120,14 @@ abstract class Connection
     {
         $socket = $this->socket();
 
+        $this->logger->debug('Send buffer: '.$buffer);
+
         try {
             $socket->write($buffer);
         } catch (Throwable $e) {
             $this->closed = true;
+
+            $this->logger->error($e->getMessage(), ['exception' => $e]);
 
             throw $e;
         }

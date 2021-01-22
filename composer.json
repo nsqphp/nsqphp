@@ -15,7 +15,8 @@
         "ext-json": "*",
         "clue/socket-raw": "^1.5",
         "composer/semver": "^3.2",
-        "phpinnacle/buffer": "^1.2"
+        "phpinnacle/buffer": "^1.2",
+        "psr/log": "^1.1"
     },
     "require-dev": {
         "ergebnis/composer-normalize": "9999999-dev",
