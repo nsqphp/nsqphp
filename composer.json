@@ -36,14 +36,14 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "scripts": {
-        "csfix": [
+        "cs": [
             "vendor/bin/php-cs-fixer fix"
+        ],
+        "cs-check": [
+            "vendor/bin/php-cs-fixer fix --verbose --diff --dry-run"
         ],
         "norm": "composer normalize --no-check-lock",
         "norm-check": "composer normalize --diff --dry-run",
-        "phpcs": [
-            "vendor/bin/php-cs-fixer fix --verbose --diff --dry-run"
-        ],
         "phpstan": [
             "vendor/bin/phpstan analyse"
         ],

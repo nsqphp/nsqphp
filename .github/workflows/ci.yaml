@@ -83,7 +83,7 @@ jobs:
                 run: composer update --no-progress --no-interaction --prefer-dist
 
             -   name: Run script
-                run: composer phpcs
+                run: composer cs-check
 
     phpstan:
         name: PHPStan
