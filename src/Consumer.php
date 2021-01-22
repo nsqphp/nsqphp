@@ -6,6 +6,8 @@ namespace Nsq;
 
 class Consumer extends Connection
 {
+    private int $rdy = 0;
+
     /**
      * Subscribe to a topic/channel.
      */
@@ -21,7 +23,33 @@ class Consumer extends Connection
      */
     public function rdy(int $count): void
     {
+        if ($this->rdy === $count) {
+            return;
+        }
+
         $this->send('RDY '.$count.PHP_EOL);
+
+        $this->rdy = $count;
+    }
+
+    public function consume(float $timeout): ?Message
+    {
+        $deadline = microtime(true) + $timeout;
+
+        $response = $this->receive($timeout);
+        if (null === $response) {
+            return null;
+        }
+
+        if ($response->isHeartBeat()) {
+            $this->nop();
+
+            return $this->consume(
+                ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime
+            );
+        }
+
+        return $response->toMessage($this);
     }
 
     /**
@@ -30,6 +58,8 @@ class Consumer extends Connection
     public function fin(string $id): void
     {
         $this->send('FIN '.$id.PHP_EOL);
+
+        --$this->rdy;
     }
 
     /**
@@ -41,6 +71,8 @@ class Consumer extends Connection
     public function req(string $id, int $timeout): void
     {
         $this->send(sprintf('REQ %s %s', $id, $timeout).PHP_EOL);
+
+        --$this->rdy;
     }
 
     /**
