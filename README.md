@@ -21,7 +21,7 @@ composer require nsq/nsq
 Requirements
 ------------
 
-This library requires PHP 7.4 or later.
+This library requires PHP 8.0 or later.
 
 Although not required, it is recommended that you install the [phpinnacle/ext-buffer](https://github.com/phpinnacle/ext-buffer) to speed up [phpinnacle/buffer](https://github.com/phpinnacle/buffer) .
 
