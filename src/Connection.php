@@ -134,14 +134,24 @@ abstract class Connection
     public function receive(float $timeout = 0): ?Response
     {
         $socket = $this->socket();
+        $deadline = microtime(true) + $timeout;
 
         if (false === $socket->selectRead($timeout)) {
             return null;
         }
 
         $size = (new ByteBuffer($socket->read(Bytes::BYTES_SIZE)))->consumeUint32();
+        $response = new Response(new ByteBuffer($socket->read($size)));
 
-        return new Response(new ByteBuffer($socket->read($size)));
+        if ($response->isHeartBeat()) {
+            $this->send('NOP'.PHP_EOL);
+
+            return $this->receive(
+                ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime
+            );
+        }
+
+        return $response;
     }
 
     protected function sendWithResponse(string $buffer): Response
