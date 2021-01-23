@@ -18,14 +18,12 @@ jobs:
                 dependencies:
                     - lowest
                     - highest
-
         services:
             nsqd:
                 image: nsqio/nsq:v1.2.0
                 options: --entrypoint /nsqd
                 ports:
                     - 4150:4150
-
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
@@ -119,3 +117,32 @@ jobs:
 
             -   name: Run script
                 run: composer psalm
+
+    infection:
+        name: Infection
+        runs-on: ubuntu-latest
+        services:
+            nsqd:
+                image: nsqio/nsq:v1.2.0
+                options: --entrypoint /nsqd
+                ports:
+                    - 4150:4150
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: '8.0'
+                    coverage: pcov
+
+            -   name: Install dependencies
+                run: composer update --no-progress --no-interaction --prefer-dist
+
+            -   name: Run script
+                env:
+                    STRYKER_DASHBOARD_API_KEY: ${{ secrets.STRYKER_DASHBOARD_API_KEY }}
+                run: |
+                    git fetch --depth=1 origin $GITHUB_BASE_REF
+                    php vendor/bin/infection -j2 --git-diff-filter=A --git-diff-base=origin/$GITHUB_BASE_REF --logger-github --ignore-msi-with-no-mutations --only-covered
