@@ -119,3 +119,23 @@ jobs:
 
             -   name: Run script
                 run: composer psalm
+
+    infection:
+        name: Infection
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: '8.0'
+
+            -   name: Install dependencies
+                run: composer update --no-progress --no-interaction --prefer-dist
+
+            -   name: Run script
+                run: |
+                    git fetch --depth=1 origin $GITHUB_BASE_REF
+                    php bin/infection -j2 --git-diff-filter=A --git-diff-base=origin/$GITHUB_BASE_REF --logger-github --ignore-msi-with-no-mutations --only-covered
