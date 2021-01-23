@@ -34,22 +34,7 @@ final class Consumer extends Connection
 
     public function consume(float $timeout): ?Message
     {
-        $deadline = microtime(true) + $timeout;
-
-        $response = $this->receive($timeout);
-        if (null === $response) {
-            return null;
-        }
-
-        if ($response->isHeartBeat()) {
-            $this->nop();
-
-            return $this->consume(
-                ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime
-            );
-        }
-
-        return $response->toMessage($this);
+        return $this->receive($timeout)?->toMessage($this);
     }
 
     /**
@@ -81,10 +66,5 @@ final class Consumer extends Connection
     public function touch(string $id): void
     {
         $this->send('TOUCH '.$id.PHP_EOL);
-    }
-
-    public function nop(): void
-    {
-        $this->send('NOP'.PHP_EOL);
     }
 }
