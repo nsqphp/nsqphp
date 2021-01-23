@@ -21,7 +21,7 @@ final class Producer extends Connection
 
         $buffer = 'PUB '.$topic.PHP_EOL.$size.$body;
 
-        $this->send($buffer)->getResponse()->okOrFail();
+        $this->sendWithResponse($buffer)->okOrFail();
     }
 
     /**
@@ -41,7 +41,7 @@ final class Producer extends Connection
 
         $buffer = 'MPUB '.$topic.PHP_EOL.$size.$num.$mb;
 
-        $this->send($buffer)->getResponse()->okOrFail();
+        $this->sendWithResponse($buffer)->okOrFail();
     }
 
     /**
@@ -53,6 +53,6 @@ final class Producer extends Connection
 
         $buffer = sprintf('DPUB %s %s', $topic, $deferTime).PHP_EOL.$size.$body;
 
-        $this->send($buffer)->getResponse()->okOrFail();
+        $this->sendWithResponse($buffer)->okOrFail();
     }
 }

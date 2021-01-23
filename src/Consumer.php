@@ -15,7 +15,7 @@ class Consumer extends Connection
     {
         $buffer = sprintf('SUB %s %s', $topic, $channel).PHP_EOL;
 
-        $this->send($buffer)->getResponse()->okOrFail();
+        $this->sendWithResponse($buffer)->okOrFail();
     }
 
     /**

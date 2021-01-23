@@ -70,7 +70,7 @@ abstract class Connection
 
         $this->logger->info('Feature Negotiation: '.http_build_query($this->features));
 
-        $this->send('IDENTIFY '.PHP_EOL.$size.$body)->getResponse()->okOrFail();
+        $this->sendWithResponse('IDENTIFY '.PHP_EOL.$size.$body)->okOrFail();
     }
 
     /**
@@ -142,8 +142,10 @@ abstract class Connection
         return new Response(new ByteBuffer($socket->read($size)));
     }
 
-    protected function getResponse(): Response
+    protected function sendWithResponse(string $buffer): Response
     {
+        $this->send($buffer);
+
         $response = $this->receive(0.1);
 
         if (null === $response) {
