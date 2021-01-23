@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Nsq\Consumer;
-use Nsq\Exception;
 use Nsq\Message;
 use Nsq\Producer;
 use Nsq\Subscriber;
@@ -17,12 +16,8 @@ final class NsqTest extends TestCase
         $producer->pub(__FUNCTION__, __FUNCTION__);
 
         $consumer = new Consumer(
-            'tcp://localhost:4150',
-            null,
-            null,
-            null,
-            null,
-            1000,
+            address: 'tcp://localhost:4150',
+            heartbeatInterval: 1000,
         );
         $subscriber = new Subscriber($consumer);
         $generator = $subscriber->subscribe(__FUNCTION__, __FUNCTION__, 1);
@@ -83,26 +78,5 @@ final class NsqTest extends TestCase
         self::assertFalse($consumer->isClosed());
         $generator->send(Subscriber::STOP);
         self::assertTrue($consumer->isClosed());
-    }
-
-    /**
-     * @dataProvider pubFails
-     */
-    public function testPubFail(string $topic, string $body, string $exceptionMessage): void
-    {
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage($exceptionMessage);
-
-        $producer = new Producer('tcp://localhost:4150');
-        $producer->pub($topic, $body);
-    }
-
-    /**
-     * @return Generator<string, array>
-     */
-    public function pubFails(): Generator
-    {
-        yield 'Empty body' => ['test', '', 'E_BAD_MESSAGE PUB invalid message body size 0'];
-        yield 'Invalid topic' => ['test$%^&', '', 'E_BAD_TOPIC PUB topic name "test$%^&" is not valid'];
     }
 }
