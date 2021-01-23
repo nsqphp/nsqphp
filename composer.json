@@ -11,7 +11,7 @@
         }
     ],
     "require": {
-        "php": "^8.0",
+        "php": "^8.0.1",
         "ext-json": "*",
         "clue/socket-raw": "^1.5",
         "composer/semver": "^3.2",
