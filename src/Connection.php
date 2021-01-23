@@ -47,6 +47,7 @@ abstract class Connection
         string $hostname = null,
         string $userAgent = null,
         int $heartbeatInterval = null,
+        int $sampleRate = 0,
     ) {
         $this->address = $address;
 
@@ -55,6 +56,7 @@ abstract class Connection
             'hostname' => $hostname ?? (static fn (mixed $host): string => \is_string($host) ? $host : '')(gethostname()),
             'user_agent' => $userAgent ?? 'nsqphp/'.InstalledVersions::getPrettyVersion('nsq/nsq'),
             'heartbeat_interval' => $heartbeatInterval,
+            'sample_rate' => $sampleRate,
         ];
 
         $this->logger = $logger ?? new NullLogger();

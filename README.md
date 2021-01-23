@@ -35,7 +35,7 @@ Features
 - [ ] Backoff	
 - [ ] TLS	
 - [ ] Snappy	
-- [ ] Sampling	
+- [X] Sampling	
 - [ ] AUTH
 
 Usage
