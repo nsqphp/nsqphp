@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Nsq;
 
-class Consumer extends Connection
+final class Consumer extends Connection
 {
     private int $rdy = 0;
 
