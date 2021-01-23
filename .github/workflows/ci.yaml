@@ -149,7 +149,7 @@ jobs:
                 run: composer update --no-progress --no-interaction --prefer-dist
 
             -   name: Run script
-                run: composer psalm
+                run: vendor/bin/psalm --output-format=github
 
     infection:
         name: Infection
