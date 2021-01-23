@@ -138,4 +138,4 @@ jobs:
             -   name: Run script
                 run: |
                     git fetch --depth=1 origin $GITHUB_BASE_REF
-                    php bin/infection -j2 --git-diff-filter=A --git-diff-base=origin/$GITHUB_BASE_REF --logger-github --ignore-msi-with-no-mutations --only-covered
+                    php vendor/bin/infection -j2 --git-diff-filter=A --git-diff-base=origin/$GITHUB_BASE_REF --logger-github --ignore-msi-with-no-mutations --only-covered
