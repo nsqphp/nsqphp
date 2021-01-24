@@ -6,6 +6,7 @@ namespace Nsq;
 
 use Composer\InstalledVersions;
 use PHPinnacle\Buffer\ByteBuffer;
+use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Socket\Raw\Factory;
@@ -22,13 +23,13 @@ use const PHP_EOL;
  */
 abstract class Connection
 {
+    use LoggerAwareTrait;
+
     private string $address;
 
     private ?Socket $socket = null;
 
     private bool $closed = false;
-
-    private LoggerInterface $logger;
 
     /**
      * @var array{
@@ -42,12 +43,12 @@ abstract class Connection
 
     public function __construct(
         string $address,
-        LoggerInterface $logger = null,
         string $clientId = null,
         string $hostname = null,
         string $userAgent = null,
         int $heartbeatInterval = null,
         int $sampleRate = 0,
+        LoggerInterface $logger = null,
     ) {
         $this->address = $address;
 
