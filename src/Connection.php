@@ -89,7 +89,7 @@ abstract class Connection
             $body = json_encode($this->features, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
             $size = pack('N', \strlen($body));
 
-            $this->sendWithResponse('IDENTIFY '.PHP_EOL.$size.$body)->okOrFail();
+            $this->send('IDENTIFY '.PHP_EOL.$size.$body)->response()->okOrFail();
         });
     }
 
@@ -214,11 +214,9 @@ abstract class Connection
         return $response;
     }
 
-    protected function sendWithResponse(string $buffer): Response
+    protected function response(): Response
     {
-        return $this
-            ->send($buffer)
-            ->receive(1) ?? throw UnexpectedResponse::null();
+        return $this->receive(1) ?? throw UnexpectedResponse::null();
     }
 
     private function socket(): Socket
