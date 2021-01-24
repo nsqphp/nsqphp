@@ -75,8 +75,8 @@ final class NsqTest extends TestCase
         $message->touch();
         $message->finish();
 
-        self::assertFalse($consumer->isClosed());
+        self::assertTrue($consumer->isReady());
         $generator->send(Subscriber::STOP);
-        self::assertTrue($consumer->isClosed());
+        self::assertFalse($consumer->isReady());
     }
 }

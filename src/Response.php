@@ -33,11 +33,15 @@ final class Response
         }
 
         if (self::TYPE_RESPONSE !== $this->type) {
+            // @codeCoverageIgnoreStart
             throw new UnexpectedResponse(sprintf('"%s" type expected, but "%s" received.', self::TYPE_RESPONSE, $this->type));
+            // @codeCoverageIgnoreEnd
         }
 
         if (self::OK !== $this->buffer->bytes()) {
+            // @codeCoverageIgnoreStart
             throw new UnexpectedResponse(sprintf('OK response expected, but "%s" received.', $this->buffer->bytes()));
+            // @codeCoverageIgnoreEnd
         }
     }
 
@@ -49,7 +53,9 @@ final class Response
     public function toMessage(Consumer $reader): Message
     {
         if (self::TYPE_MESSAGE !== $this->type) {
+            // @codeCoverageIgnoreStart
             throw new UnexpectedResponse(sprintf('Expecting "%s" type, but NSQ return: "%s"', self::TYPE_MESSAGE, $this->type));
+            // @codeCoverageIgnoreEnd
         }
 
         $buffer = new ByteBuffer($this->buffer->bytes());
