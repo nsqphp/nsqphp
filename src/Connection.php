@@ -17,6 +17,7 @@ use Socket\Raw\Exception;
 use Socket\Raw\Factory;
 use Socket\Raw\Socket;
 use function addcslashes;
+use function implode;
 use function json_encode;
 use function pack;
 use const JSON_FORCE_OBJECT;
@@ -84,12 +85,11 @@ abstract class Connection
             }
             // @codeCoverageIgnoreEnd
 
-            $this->send('  V2');
+            $this->socket->write('  V2');
 
             $body = json_encode($this->features, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
-            $size = pack('N', \strlen($body));
 
-            $this->send('IDENTIFY '.PHP_EOL.$size.$body)->response()->okOrFail();
+            $this->command('IDENTIFY', data: $body)->response()->okOrFail();
         });
     }
 
@@ -130,9 +130,20 @@ abstract class Connection
         return 'AUTH'.PHP_EOL.$size.$secret;
     }
 
-    protected function send(string $buffer): self
+    /**
+     * @param array<int, int|string>|string $params
+     */
+    protected function command(string $command, array | string $params = [], string $data = null): self
     {
         $socket = $this->socket();
+
+        $buffer = [] === $params ? $command : implode(' ', [$command, ...((array) $params)]);
+        $buffer .= PHP_EOL;
+
+        if (null !== $data) {
+            $buffer .= pack('N', \strlen($data));
+            $buffer .= $data;
+        }
 
         $this->logger->debug('Send buffer: '.addcslashes($buffer, PHP_EOL));
 
@@ -148,7 +159,6 @@ abstract class Connection
             throw ConnectionFail::fromThrowable($e);
         }
         // @codeCoverageIgnoreEnd
-
         return $this;
     }
 
@@ -196,7 +206,7 @@ abstract class Connection
             $response = new Response($buffer);
 
             if ($response->isHeartBeat()) {
-                $this->send('NOP'.PHP_EOL);
+                $this->command('NOP');
 
                 return $this->receive(
                     ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime

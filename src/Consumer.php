@@ -13,9 +13,7 @@ final class Consumer extends Connection
      */
     public function sub(string $topic, string $channel): void
     {
-        $buffer = sprintf('SUB %s %s', $topic, $channel).PHP_EOL;
-
-        $this->send($buffer)->response()->okOrFail();
+        $this->command('SUB', [$topic, $channel])->response()->okOrFail();
     }
 
     /**
@@ -27,7 +25,7 @@ final class Consumer extends Connection
             return;
         }
 
-        $this->send('RDY '.$count.PHP_EOL);
+        $this->command('RDY', (string) $count);
 
         $this->rdy = $count;
     }
@@ -42,7 +40,7 @@ final class Consumer extends Connection
      */
     public function fin(string $id): void
     {
-        $this->send('FIN '.$id.PHP_EOL);
+        $this->command('FIN', $id);
 
         --$this->rdy;
     }
@@ -55,7 +53,7 @@ final class Consumer extends Connection
      */
     public function req(string $id, int $timeout): void
     {
-        $this->send(sprintf('REQ %s %s', $id, $timeout).PHP_EOL);
+        $this->command('REQ', [$id, $timeout]);
 
         --$this->rdy;
     }
@@ -65,6 +63,6 @@ final class Consumer extends Connection
      */
     public function touch(string $id): void
     {
-        $this->send('TOUCH '.$id.PHP_EOL);
+        $this->command('TOUCH', $id);
     }
 }

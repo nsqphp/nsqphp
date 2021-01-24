@@ -7,8 +7,6 @@ namespace Nsq;
 use function array_map;
 use function implode;
 use function pack;
-use function sprintf;
-use const PHP_EOL;
 
 final class Producer extends Connection
 {
@@ -17,11 +15,7 @@ final class Producer extends Connection
      */
     public function pub(string $topic, string $body): void
     {
-        $size = pack('N', \strlen($body));
-
-        $buffer = 'PUB '.$topic.PHP_EOL.$size.$body;
-
-        $this->send($buffer)->response()->okOrFail();
+        $this->command('PUB', $topic, $body)->response()->okOrFail();
     }
 
     /**
@@ -37,11 +31,7 @@ final class Producer extends Connection
             return pack('N', \strlen($body)).$body;
         }, $bodies));
 
-        $size = pack('N', \strlen($num.$mb));
-
-        $buffer = 'MPUB '.$topic.PHP_EOL.$size.$num.$mb;
-
-        $this->send($buffer)->response()->okOrFail();
+        $this->command('MPUB', $topic, $num.$mb)->response()->okOrFail();
     }
 
     /**
@@ -49,10 +39,6 @@ final class Producer extends Connection
      */
     public function dpub(string $topic, int $deferTime, string $body): void
     {
-        $size = pack('N', \strlen($body));
-
-        $buffer = sprintf('DPUB %s %s', $topic, $deferTime).PHP_EOL.$size.$body;
-
-        $this->send($buffer)->response()->okOrFail();
+        $this->command('DPUB', [$topic, $deferTime], $body)->response()->okOrFail();
     }
 }
