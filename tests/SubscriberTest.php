@@ -34,7 +34,7 @@ final class SubscriberTest extends TestCase
 
     public function testInvalidChangeInterval(): void
     {
-        $this->expectException(\Nsq\Exception::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Timeout must be float, "string" given.');
 
         $generator = $this->subscriber->subscribe(__FUNCTION__, __FUNCTION__);

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Nsq\Exception\NsqError;
 use Nsq\Producer;
 use PHPUnit\Framework\TestCase;
 
@@ -12,7 +13,7 @@ final class ProducerTest extends TestCase
      */
     public function testPubFail(string $topic, string $body, string $exceptionMessage): void
     {
-        $this->expectException(Exception::class);
+        $this->expectException(NsqError::class);
         $this->expectExceptionMessage($exceptionMessage);
 
         $producer = new Producer('tcp://localhost:4150');
