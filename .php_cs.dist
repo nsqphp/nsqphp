@@ -13,6 +13,9 @@ return (new PhpCsFixer\Config())
         'php_unit_test_class_requires_covers' => false,
         'yoda_style' => true,
         'php_unit_test_case_static_method_calls'=> ['call_type' => 'self'],
+        'blank_line_before_statement' => [
+            'statements' => ['continue', 'do', 'die', 'exit', 'goto', 'if', 'return', 'switch', 'throw', 'try']
+        ],
     ])
     ->setFinder(
         PhpCsFixer\Finder::create()
