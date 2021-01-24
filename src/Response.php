@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nsq;
 
+use Nsq\Exception\NsqError;
+use Nsq\Exception\UnexpectedResponse;
 use PHPinnacle\Buffer\ByteBuffer;
 
 final class Response
@@ -27,15 +29,15 @@ final class Response
     public function okOrFail(): void
     {
         if (self::TYPE_ERROR === $this->type) {
-            throw new Exception($this->buffer->bytes());
+            throw new NsqError($this->buffer->bytes());
         }
 
         if (self::TYPE_RESPONSE !== $this->type) {
-            throw new Exception(sprintf('"%s" type expected, but "%s" received.', self::TYPE_RESPONSE, $this->type));
+            throw new UnexpectedResponse(sprintf('"%s" type expected, but "%s" received.', self::TYPE_RESPONSE, $this->type));
         }
 
         if (self::OK !== $this->buffer->bytes()) {
-            throw new Exception(sprintf('OK response expected, but "%s" received.', $this->buffer->bytes()));
+            throw new UnexpectedResponse(sprintf('OK response expected, but "%s" received.', $this->buffer->bytes()));
         }
     }
 
@@ -47,7 +49,7 @@ final class Response
     public function toMessage(Consumer $reader): Message
     {
         if (self::TYPE_MESSAGE !== $this->type) {
-            throw new Exception(sprintf('Expecting "%s" type, but NSQ return: "%s"', self::TYPE_MESSAGE, $this->type));
+            throw new UnexpectedResponse(sprintf('Expecting "%s" type, but NSQ return: "%s"', self::TYPE_MESSAGE, $this->type));
         }
 
         $buffer = new ByteBuffer($this->buffer->bytes());

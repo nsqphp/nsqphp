@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nsq;
 
+use Nsq\Exception\MessageAlreadyFinished;
+
 final class Message
 {
     /**
@@ -48,7 +50,7 @@ final class Message
     public function finish(): void
     {
         if ($this->finished) {
-            throw new Exception('Can\'t finish message as it already finished.');
+            throw MessageAlreadyFinished::finish($this);
         }
 
         $this->consumer->fin($this->id);
@@ -58,7 +60,7 @@ final class Message
     public function requeue(int $timeout): void
     {
         if ($this->finished) {
-            throw new Exception('Can\'t requeue message as it already finished.');
+            throw MessageAlreadyFinished::requeue($this);
         }
 
         $this->consumer->req($this->id, $timeout);
@@ -68,7 +70,7 @@ final class Message
     public function touch(): void
     {
         if ($this->finished) {
-            throw new Exception('Can\'t touch message as it already finished.');
+            throw MessageAlreadyFinished::touch($this);
         }
 
         $this->consumer->touch($this->id);

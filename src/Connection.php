@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Nsq;
 
 use Composer\InstalledVersions;
+use Nsq\Exception\ConnectionFail;
+use Nsq\Exception\UnexpectedResponse;
 use PHPinnacle\Buffer\ByteBuffer;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Socket\Raw\Exception;
 use Socket\Raw\Factory;
 use Socket\Raw\Socket;
 use Throwable;
@@ -65,7 +68,12 @@ abstract class Connection
 
     public function connect(): void
     {
-        $this->socket = (new Factory())->createClient($this->address);
+        try {
+            $this->socket = (new Factory())->createClient($this->address);
+        } catch (Exception $e) {
+            throw ConnectionFail::fromThrowable($e);
+        }
+
         $this->send('  V2');
 
         $body = json_encode($this->features, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
@@ -121,12 +129,12 @@ abstract class Connection
 
         try {
             $socket->write($buffer);
-        } catch (Throwable $e) {
+        } catch (Exception $e) {
             $this->closed = true;
 
             $this->logger->error($e->getMessage(), ['exception' => $e]);
 
-            throw $e;
+            throw ConnectionFail::fromThrowable($e);
         }
 
         return $this;
@@ -162,7 +170,7 @@ abstract class Connection
         $response = $this->receive(0.1);
 
         if (null === $response) {
-            throw new Exception('Response was expected, but null received.');
+            throw new UnexpectedResponse('Response was expected, but null received.');
         }
 
         return $response;
@@ -171,7 +179,7 @@ abstract class Connection
     private function socket(): Socket
     {
         if ($this->closed) {
-            throw new Exception('This connection is closed, create new one.');
+            throw new ConnectionFail('This connection is closed, create new one.');
         }
 
         if (null === $this->socket) {

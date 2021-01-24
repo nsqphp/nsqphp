@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Nsq;
+namespace Nsq\Exception;
 
 use Throwable;
 

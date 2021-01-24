@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nsq;
 
 use Generator;
+use InvalidArgumentException;
 use function get_debug_type;
 use function sprintf;
 
@@ -41,7 +42,7 @@ final class Subscriber
                 $newTimeout = yield null;
 
                 if (!\is_float($newTimeout)) {
-                    throw new Exception(sprintf('Timeout must be float, "%s" given.', get_debug_type($newTimeout)));
+                    throw new InvalidArgumentException(sprintf('Timeout must be float, "%s" given.', get_debug_type($newTimeout)));
                 }
 
                 $timeout = $newTimeout;

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Nsq\Consumer;
-use Nsq\Exception;
+use Nsq\Exception\MessageAlreadyFinished;
 use Nsq\Message;
 use PHPUnit\Framework\TestCase;
 
@@ -20,7 +20,7 @@ final class MessageTest extends TestCase
 
         self::assertTrue($message->isFinished());
 
-        $this->expectException(Exception::class);
+        $this->expectException(MessageAlreadyFinished::class);
         $this->expectExceptionMessage('Can\'t finish message as it already finished.');
 
         $message->finish();
@@ -37,7 +37,7 @@ final class MessageTest extends TestCase
 
         self::assertTrue($message->isFinished());
 
-        $this->expectException(Exception::class);
+        $this->expectException(MessageAlreadyFinished::class);
         $this->expectExceptionMessage('Can\'t requeue message as it already finished.');
 
         $message->requeue(5);
@@ -52,7 +52,7 @@ final class MessageTest extends TestCase
 
         $message->finish();
 
-        $this->expectException(Exception::class);
+        $this->expectException(MessageAlreadyFinished::class);
         $this->expectExceptionMessage('Can\'t touch message as it already finished.');
 
         $message->touch();
