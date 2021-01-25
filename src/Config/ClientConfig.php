@@ -81,6 +81,8 @@ final class ClientConfig implements JsonSerializable
         // A string identifying the agent for this client in the spirit of HTTP.
         public string $userAgent = '',
     ) {
+        $this->featureNegotiation = true; // Always enabled
+
         if ('' === $this->hostname) {
             $this->hostname = (static fn (mixed $h): string => \is_string($h) ? $h : '')(gethostname());
         }

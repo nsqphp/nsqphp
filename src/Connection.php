@@ -29,6 +29,8 @@ use const PHP_EOL;
 
 /**
  * @internal
+ *
+ * @property ConnectionConfig $connectionConfig
  */
 abstract class Connection
 {
@@ -77,9 +79,7 @@ abstract class Connection
 
             $response = $this->command('IDENTIFY', data: $body)->response();
 
-            if ($this->clientConfig->featureNegotiation) {
-                $this->connectionConfig = ConnectionConfig::fromArray($response->toArray());
-            }
+            $this->connectionConfig = ConnectionConfig::fromArray($response->toArray());
 
             if ($this->connectionConfig->snappy || $this->connectionConfig->deflate) {
                 $this->response()->okOrFail();
