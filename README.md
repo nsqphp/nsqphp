@@ -44,7 +44,7 @@ Usage
 ### Publish
 
 ```php
-use Nsq\Producer;
+use Nsq\Producer;use function Amp\Promise\timeout;
 
 $producer = new Producer(address: 'tcp://nsqd:4150');
 
@@ -58,7 +58,7 @@ $producer->mpub('topic', [
 ]);
 
 // Publish a deferred message to a topic
-$producer->dpub('topic', 5000, 'Deferred message');
+$producer->dpub('topic', 'Deferred message', delay: 5000);
 ```
 
 ### Subscription

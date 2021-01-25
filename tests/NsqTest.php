@@ -63,7 +63,7 @@ final class NsqTest extends TestCase
         self::assertSame('Second mpub message.', $message->body);
         $message->finish();
 
-        $producer->dpub(__FUNCTION__, 2000, 'Deferred message.');
+        $producer->dpub(__FUNCTION__, 'Deferred message.', 2000);
 
         $generator->next();
         /** @var null|Message $message */

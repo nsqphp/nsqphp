@@ -37,8 +37,8 @@ final class Producer extends Connection
     /**
      * @psalm-suppress PossiblyFalseOperand
      */
-    public function dpub(string $topic, int $deferTime, string $body): void
+    public function dpub(string $topic, string $body, int $delay): void
     {
-        $this->command('DPUB', [$topic, $deferTime], $body)->response()->okOrFail();
+        $this->command('DPUB', [$topic, $delay], $body)->response()->okOrFail();
     }
 }
