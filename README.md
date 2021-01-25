@@ -44,7 +44,7 @@ Usage
 ### Publish
 
 ```php
-use Nsq\Producer;use function Amp\Promise\timeout;
+use Nsq\Producer;
 
 $producer = new Producer(address: 'tcp://nsqd:4150');
 
