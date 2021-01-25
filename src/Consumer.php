@@ -30,11 +30,6 @@ final class Consumer extends Connection
         $this->rdy = $count;
     }
 
-    public function consume(float $timeout): ?Message
-    {
-        return $this->receive($timeout)?->toMessage($this);
-    }
-
     /**
      * Finish a message (indicate successful processing).
      */

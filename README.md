@@ -30,13 +30,13 @@ Features
 
 - [x] PUB
 - [x] SUB
-- [ ] Feature Negotiation	
+- [X] Feature Negotiation	
 - [ ] Discovery	
 - [ ] Backoff	
 - [ ] TLS	
 - [ ] Snappy	
 - [X] Sampling	
-- [ ] AUTH
+- [X] AUTH
 
 Usage
 -----
@@ -71,7 +71,7 @@ use Nsq\Subscriber;
 $consumer = new Consumer('tcp://nsqd:4150');
 $subscriber = new Subscriber($consumer);
 
-$generator = $subscriber->subscribe('topic', 'channel', timeout: 5);
+$generator = $subscriber->subscribe('topic', 'channel');
 foreach ($generator as $message) {
     if ($message instanceof Message) {
         $payload = $message->body;
@@ -88,10 +88,6 @@ foreach ($generator as $message) {
     
     // We can also communicate with generator through send
     // for example:
-
-    // Dynamically change timeout 
-    $generator->send(Subscriber::CHANGE_TIMEOUT);
-    $generator->send(10.0); // float required
 
     // Gracefully close connection (loop will be ended)
     $generator->send(Subscriber::STOP); 

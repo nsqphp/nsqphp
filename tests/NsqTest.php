@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use Nsq\Config\ClientConfig;
 use Nsq\Consumer;
 use Nsq\Message;
 use Nsq\Producer;
 use Nsq\Subscriber;
+use Nyholm\NSA;
 use PHPUnit\Framework\TestCase;
 
 final class NsqTest extends TestCase
@@ -17,10 +19,13 @@ final class NsqTest extends TestCase
 
         $consumer = new Consumer(
             address: 'tcp://localhost:4150',
-            heartbeatInterval: 1000,
+            clientConfig: new ClientConfig(
+                heartbeatInterval: 1000,
+                readTimeout: 1,
+            ),
         );
         $subscriber = new Subscriber($consumer);
-        $generator = $subscriber->subscribe(__FUNCTION__, __FUNCTION__, 1);
+        $generator = $subscriber->subscribe(__FUNCTION__, __FUNCTION__);
 
         /** @var null|Message $message */
         $message = $generator->current();
@@ -65,8 +70,13 @@ final class NsqTest extends TestCase
         $message = $generator->current();
         self::assertNull($message);
 
-        $generator->send(Subscriber::CHANGE_TIMEOUT);
-        $generator->send(10.0);
+        NSA::setProperty(
+            NSA::getProperty($consumer, 'clientConfig'),
+            'readTimeout',
+            10,
+        );
+
+        $generator->next();
 
         /** @var null|Message $message */
         $message = $generator->current();

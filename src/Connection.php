@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Nsq;
 
-use Composer\InstalledVersions;
+use Nsq\Config\ClientConfig;
+use Nsq\Config\ConnectionConfig;
+use Nsq\Exception\AuthenticationRequired;
 use Nsq\Exception\ConnectionFail;
 use Nsq\Exception\UnexpectedResponse;
 use Nsq\Reconnect\ExponentialStrategy;
@@ -17,6 +19,7 @@ use Socket\Raw\Exception;
 use Socket\Raw\Factory;
 use Socket\Raw\Socket;
 use function addcslashes;
+use function http_build_query;
 use function implode;
 use function json_encode;
 use function pack;
@@ -37,38 +40,21 @@ abstract class Connection
 
     private ReconnectStrategy $reconnect;
 
-    /**
-     * @var array{
-     *             client_id: string,
-     *             hostname: string,
-     *             user_agent: string,
-     *             heartbeat_interval: int|null,
-     *             }
-     */
-    private array $features;
+    private ClientConfig $clientConfig;
+
+    private ?ConnectionConfig $connectionConfig = null;
 
     public function __construct(
         string $address,
-        string $clientId = null,
-        string $hostname = null,
-        string $userAgent = null,
-        int $heartbeatInterval = null,
-        int $sampleRate = 0,
+        ClientConfig $clientConfig = null,
         ReconnectStrategy $reconnectStrategy = null,
         LoggerInterface $logger = null,
     ) {
         $this->address = $address;
 
-        $this->features = [
-            'client_id' => $clientId ?? '',
-            'hostname' => $hostname ?? (static fn (mixed $h): string => \is_string($h) ? $h : '')(gethostname()),
-            'user_agent' => $userAgent ?? 'nsqphp/'.InstalledVersions::getPrettyVersion('nsq/nsq'),
-            'heartbeat_interval' => $heartbeatInterval,
-            'sample_rate' => $sampleRate,
-        ];
-
         $this->logger = $logger ?? new NullLogger();
         $this->reconnect = $reconnectStrategy ?? new ExponentialStrategy(logger: $this->logger);
+        $this->clientConfig = $clientConfig ?? new ClientConfig();
     }
 
     public function connect(): void
@@ -87,9 +73,27 @@ abstract class Connection
 
             $this->socket->write('  V2');
 
-            $body = json_encode($this->features, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
+            $body = json_encode($this->clientConfig, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
 
-            $this->command('IDENTIFY', data: $body)->response()->okOrFail();
+            $response = $this->command('IDENTIFY', data: $body)->response();
+
+            if ($this->clientConfig->featureNegotiation) {
+                $this->connectionConfig = ConnectionConfig::fromArray($response->toArray());
+            }
+
+            if ($this->connectionConfig->snappy || $this->connectionConfig->deflate) {
+                $this->response()->okOrFail();
+            }
+
+            if ($this->connectionConfig->authRequired) {
+                if (null === $this->clientConfig->authSecret) {
+                    throw new AuthenticationRequired('NSQ requires authorization, set ClientConfig::$authSecret before connecting');
+                }
+
+                $authResponse = $this->command('AUTH', data: $this->clientConfig->authSecret)->response()->toArray();
+
+                $this->logger->info('Authorization response: '.http_build_query($authResponse));
+            }
         });
     }
 
@@ -118,16 +122,6 @@ abstract class Connection
     public function isReady(): bool
     {
         return null !== $this->socket;
-    }
-
-    /**
-     * @psalm-suppress PossiblyFalseOperand
-     */
-    protected function auth(string $secret): string
-    {
-        $size = pack('N', \strlen($secret));
-
-        return 'AUTH'.PHP_EOL.$size.$secret;
     }
 
     /**
@@ -176,9 +170,11 @@ abstract class Connection
         // @codeCoverageIgnoreEnd
     }
 
-    public function receive(float $timeout = 0): ?Response
+    public function receive(float $timeout = null): ?Response
     {
         $socket = $this->socket();
+
+        $timeout ??= $this->clientConfig->readTimeout;
         $deadline = microtime(true) + $timeout;
 
         if (!$this->hasMessage($timeout)) {
@@ -226,7 +222,7 @@ abstract class Connection
 
     protected function response(): Response
     {
-        return $this->receive(1) ?? throw UnexpectedResponse::null();
+        return $this->receive() ?? throw UnexpectedResponse::null();
     }
 
     private function socket(): Socket

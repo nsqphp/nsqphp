@@ -7,6 +7,9 @@ namespace Nsq;
 use Nsq\Exception\NsqError;
 use Nsq\Exception\UnexpectedResponse;
 use PHPinnacle\Buffer\ByteBuffer;
+use function json_decode;
+use function sprintf;
+use const JSON_THROW_ON_ERROR;
 
 final class Response
 {
@@ -48,6 +51,20 @@ final class Response
     public function isHeartBeat(): bool
     {
         return self::TYPE_RESPONSE === $this->type && self::HEARTBEAT === $this->buffer->bytes();
+    }
+
+    /**
+     * @phpstan-ignore-next-line
+     */
+    public function toArray(): array
+    {
+        if (self::TYPE_RESPONSE !== $this->type) {
+            // @codeCoverageIgnoreStart
+            throw new UnexpectedResponse(sprintf('"%s" type expected, but "%s" received.', self::TYPE_RESPONSE, $this->type));
+            // @codeCoverageIgnoreEnd
+        }
+
+        return json_decode($this->buffer->bytes(), true, flags: JSON_THROW_ON_ERROR);
     }
 
     public function toMessage(Consumer $reader): Message
