@@ -117,6 +117,7 @@ abstract class Connection
         // @codeCoverageIgnoreEnd
 
         $this->socket = null;
+        $this->connectionConfig = null;
     }
 
     public function isReady(): bool
