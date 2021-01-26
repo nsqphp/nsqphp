@@ -190,12 +190,18 @@ abstract class Connection
                 throw new ConnectionFail('Probably connection lost');
             }
 
-            $buffer = new ByteBuffer(
-                $socket->read(
-                // @phpstan-ignore-next-line
-                    unpack('N', $size)[1]
-                )
-            );
+            $buffer = new ByteBuffer();
+
+            /** @phpstan-ignore-next-line */
+            $size = unpack('N', $size)[1];
+
+            do {
+                $chunk = $socket->read($size);
+
+                $buffer->append($chunk);
+
+                $size -= \strlen($chunk);
+            } while (0 < $size);
 
             $this->logger->debug('Received buffer: '.addcslashes($buffer->bytes(), PHP_EOL));
 
