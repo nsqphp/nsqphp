@@ -9,7 +9,6 @@ use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Throwable;
-use function sprintf;
 
 final class ExponentialStrategy implements ReconnectStrategy
 {
@@ -53,7 +52,7 @@ final class ExponentialStrategy implements ReconnectStrategy
             $this->delay = $nextDelay > $this->maxDelay ? $this->maxDelay : $nextDelay;
             $this->nextTryAfter = $currentTime + $this->delay;
 
-            $this->logger->info(sprintf('Reconnect #%s after %ss', ++$this->attempt, $this->delay));
+            $this->logger->warning('Reconnect #{attempt} after {delay}s', ['attempt' => ++$this->attempt, 'delay' => $this->delay]);
 
             throw $e;
         }
