@@ -110,6 +110,7 @@ final class ClientConfig implements JsonSerializable
             'hostname' => $this->hostname,
             'msg_timeout' => $this->msgTimeout,
             'sample_rate' => $this->sampleRate,
+            'snappy' => $this->snappy,
             'tls_v1' => $this->tls,
             'user_agent' => $this->userAgent,
         ];
