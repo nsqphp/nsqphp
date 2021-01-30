@@ -6,7 +6,6 @@ use Nsq\Config\ClientConfig;
 use Nsq\Consumer;
 use Nsq\Producer;
 use Nsq\Protocol\Message;
-use Nsq\Subscriber;
 use Nyholm\NSA;
 use PHPUnit\Framework\TestCase;
 
@@ -26,8 +25,7 @@ final class NsqTest extends TestCase
                 readTimeout: 1,
             ),
         );
-        $subscriber = new Subscriber($consumer);
-        $generator = $subscriber->run();
+        $generator = $consumer->generator();
 
         /** @var null|Message $message */
         $message = $generator->current();
@@ -88,7 +86,7 @@ final class NsqTest extends TestCase
         $message->finish();
 
         self::assertTrue($consumer->isReady());
-        $generator->send(Subscriber::STOP);
+        $generator->send(0);
         self::assertFalse($consumer->isReady());
     }
 }

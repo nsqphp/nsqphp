@@ -41,7 +41,7 @@ Features
 Usage
 -----
 
-### Publish
+### Producer
 
 ```php
 use Nsq\Producer;
@@ -61,12 +61,11 @@ $producer->mpub('topic', [
 $producer->dpub('topic', 'Deferred message', delay: 5000);
 ```
 
-### Subscription
+### Consumer
 
 ```php
 use Nsq\Consumer;
 use Nsq\Protocol\Message;
-use Nsq\Subscriber;
 
 $consumer = new Consumer(
     topic: 'topic', 
@@ -74,7 +73,8 @@ $consumer = new Consumer(
     address: 'tcp://nsqd:4150',
 );
 
-$generator = (new Subscriber($consumer))->run();
+// Simple blocking loop based on generator
+$generator = $consumer->generator(); 
 
 foreach ($generator as $message) {
     if ($message instanceof Message) {
@@ -89,12 +89,9 @@ foreach ($generator as $message) {
     
     // In case of nothing received during timeout generator will return NULL
     // Here we can do something between messages, like pcntl_signal_dispatch()
-    
-    // We can also communicate with generator through send
-    // for example:
 
     // Gracefully close connection (loop will be ended)
-    $generator->send(Subscriber::STOP); 
+    $generator->send(0); 
 }
 ```
 

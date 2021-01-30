@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nsq;
 
+use Generator;
 use Nsq\Config\ClientConfig;
 use Nsq\Exception\NsqError;
 use Nsq\Exception\NsqException;
@@ -32,6 +33,24 @@ final class Consumer extends Connection
         parent::connect();
 
         $this->command('SUB', [$this->topic, $this->channel])->checkIsOK();
+    }
+
+    /**
+     * @psalm-return Generator<int, Message|float|null, int|null, void>
+     */
+    public function generator(): Generator
+    {
+        while (true) {
+            $this->rdy(1);
+
+            $command = yield $this->readMessage();
+
+            if (0 === $command) {
+                break;
+            }
+        }
+
+        $this->disconnect();
     }
 
     public function readMessage(): ?Message
