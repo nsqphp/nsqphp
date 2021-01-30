@@ -10,8 +10,9 @@ use Nsq\Exception\NsqError;
 use Nsq\Exception\NsqException;
 use Nsq\Protocol\Error;
 use Nsq\Protocol\Message;
-use Nsq\Reconnect\ReconnectStrategy;
+use Nsq\Protocol\Response;
 use Psr\Log\LoggerInterface;
+use function microtime;
 
 final class Consumer extends Connection
 {
@@ -22,17 +23,9 @@ final class Consumer extends Connection
         private string $channel,
         string $address,
         ClientConfig $clientConfig = null,
-        ReconnectStrategy $reconnectStrategy = null,
         LoggerInterface $logger = null
     ) {
-        parent::__construct($address, $clientConfig, $reconnectStrategy, $logger);
-    }
-
-    public function connect(): void
-    {
-        parent::connect();
-
-        $this->command('SUB', [$this->topic, $this->channel])->checkIsOK();
+        parent::__construct($address, $clientConfig, $logger);
     }
 
     /**
@@ -40,30 +33,48 @@ final class Consumer extends Connection
      */
     public function generator(): Generator
     {
+        $this->command('SUB', [$this->topic, $this->channel])->checkIsOK();
+
         while (true) {
             $this->rdy(1);
 
-            $command = yield $this->readMessage();
+            $timeout = $this->clientConfig->readTimeout;
+
+            do {
+                $deadline = microtime(true) + $timeout;
+
+                $message = $this->hasMessage($timeout) ? $this->readMessage() : null;
+
+                $timeout = ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime;
+            } while (0 < $timeout && null === $message);
+
+            $command = yield $message;
 
             if (0 === $command) {
                 break;
             }
         }
 
-        $this->disconnect();
+        $this->close();
     }
 
     public function readMessage(): ?Message
     {
         $frame = $this->readFrame();
 
-        if ($frame instanceof Message || null === $frame) {
+        if ($frame instanceof Message) {
             return $frame;
+        }
+
+        if ($frame instanceof Response && $frame->isHeartBeat()) {
+            $this->command('NOP');
+
+            return null;
         }
 
         if ($frame instanceof Error) {
             if ($frame->type->terminateConnection) {
-                $this->disconnect();
+                $this->close();
             }
 
             throw new NsqError($frame);

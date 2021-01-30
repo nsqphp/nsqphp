@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Nsq;
 
 use PHPinnacle\Buffer\ByteBuffer;
-use const PHP_EOL;
 
 final class Buffer
 {
@@ -21,17 +20,6 @@ final class Buffer
         $this->buffer->append($data);
 
         return $this;
-    }
-
-    public function appendCommand(string $command): void
-    {
-        $this->buffer->append($command.PHP_EOL);
-    }
-
-    public function appendData(string $data): void
-    {
-        $this->buffer->appendUint32(\strlen($data));
-        $this->buffer->append($data);
     }
 
     public function consumeSize(): int

@@ -8,6 +8,9 @@ use Composer\InstalledVersions;
 use InvalidArgumentException;
 use JsonSerializable;
 use function gethostname;
+use function json_encode;
+use const JSON_FORCE_OBJECT;
+use const JSON_THROW_ON_ERROR;
 
 /**
  * This class is used for configuring the clients for nsq. Immutable properties must be set when creating the object and
@@ -135,5 +138,10 @@ final class ClientConfig implements JsonSerializable
             'tls_v1' => $this->tls,
             'user_agent' => $this->userAgent,
         ];
+    }
+
+    public function toString(): string
+    {
+        return json_encode($this, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
     }
 }

@@ -8,11 +8,11 @@ use function array_map;
 use function implode;
 use function pack;
 
+/**
+ * @psalm-suppress PropertyNotSetInConstructor
+ */
 final class Producer extends Connection
 {
-    /**
-     * @psalm-suppress PossiblyFalseOperand
-     */
     public function pub(string $topic, string $body): void
     {
         $this->command('PUB', $topic, $body)->checkIsOK();
@@ -34,9 +34,6 @@ final class Producer extends Connection
         $this->command('MPUB', $topic, $num.$mb)->checkIsOK();
     }
 
-    /**
-     * @psalm-suppress PossiblyFalseOperand
-     */
     public function dpub(string $topic, string $body, int $delay): void
     {
         $this->command('DPUB', [$topic, $delay], $body)->checkIsOK();
