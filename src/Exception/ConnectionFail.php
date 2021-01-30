@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Nsq\Exception;
 
-use RuntimeException;
 use Throwable;
 
-final class ConnectionFail extends RuntimeException implements NsqException
+final class ConnectionFail extends NsqException
 {
     /**
      * @codeCoverageIgnore

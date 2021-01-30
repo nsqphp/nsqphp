@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nsq;
 
 use Generator;
+use Nsq\Protocol\Message;
 
 final class Subscriber
 {
@@ -27,7 +28,7 @@ final class Subscriber
         while (true) {
             $this->reader->rdy(1);
 
-            $command = yield $this->reader->receive()?->toMessage($this->reader);
+            $command = yield $this->reader->readMessage();
 
             if (self::STOP === $command) {
                 break;

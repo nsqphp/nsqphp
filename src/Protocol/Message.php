@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Nsq;
+namespace Nsq\Protocol;
 
+use Nsq\Bytes;
+use Nsq\Consumer;
 use Nsq\Exception\MessageAlreadyFinished;
 
-final class Message
+final class Message extends Frame
 {
     /**
      * @psalm-readonly
@@ -34,6 +36,14 @@ final class Message
 
     public function __construct(int $timestamp, int $attempts, string $id, string $body, Consumer $consumer)
     {
+        parent::__construct(
+            Bytes::BYTES_TYPE
+            + Bytes::BYTES_TIMESTAMP
+            + Bytes::BYTES_ATTEMPTS
+            + Bytes::BYTES_ID
+            + \strlen($body)
+        );
+
         $this->timestamp = $timestamp;
         $this->attempts = $attempts;
         $this->id = $id;

@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Nsq;
 
+use Nsq\Exception\NsqError;
+use Nsq\Exception\NsqException;
+use Nsq\Protocol\Error;
+use Nsq\Protocol\Message;
+
 final class Consumer extends Connection
 {
     private int $rdy = 0;
@@ -13,7 +18,26 @@ final class Consumer extends Connection
      */
     public function sub(string $topic, string $channel): void
     {
-        $this->command('SUB', [$topic, $channel])->response()->okOrFail();
+        $this->command('SUB', [$topic, $channel])->checkIsOK();
+    }
+
+    public function readMessage(): ?Message
+    {
+        $frame = $this->readFrame();
+
+        if ($frame instanceof Message || null === $frame) {
+            return $frame;
+        }
+
+        if ($frame instanceof Error) {
+            if ($frame->type->terminateConnection) {
+                $this->disconnect();
+            }
+
+            throw new NsqError($frame);
+        }
+
+        throw new NsqException('Unreachable statement.');
     }
 
     /**

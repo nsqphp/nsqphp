@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Nsq\Exception;
 
-use Throwable;
+use RuntimeException;
 
-interface NsqException extends Throwable
+class NsqException extends RuntimeException
 {
 }

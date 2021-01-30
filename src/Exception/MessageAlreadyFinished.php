@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Nsq\Exception;
 
-use Nsq\Message;
-use RuntimeException;
+use Nsq\Protocol\Message;
 
-final class MessageAlreadyFinished extends RuntimeException implements NsqException
+final class MessageAlreadyFinished extends NsqException
 {
     public static function finish(Message $message): self
     {

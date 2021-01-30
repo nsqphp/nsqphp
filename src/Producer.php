@@ -15,7 +15,7 @@ final class Producer extends Connection
      */
     public function pub(string $topic, string $body): void
     {
-        $this->command('PUB', $topic, $body)->response()->okOrFail();
+        $this->command('PUB', $topic, $body)->checkIsOK();
     }
 
     /**
@@ -31,7 +31,7 @@ final class Producer extends Connection
             return pack('N', \strlen($body)).$body;
         }, $bodies));
 
-        $this->command('MPUB', $topic, $num.$mb)->response()->okOrFail();
+        $this->command('MPUB', $topic, $num.$mb)->checkIsOK();
     }
 
     /**
@@ -39,6 +39,6 @@ final class Producer extends Connection
      */
     public function dpub(string $topic, string $body, int $delay): void
     {
-        $this->command('DPUB', [$topic, $delay], $body)->response()->okOrFail();
+        $this->command('DPUB', [$topic, $delay], $body)->checkIsOK();
     }
 }
