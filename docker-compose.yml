@@ -3,7 +3,7 @@ version: '3.7'
 services:
     nsqd:
         image: nsqio/nsq:v1.2.0
-        command: /nsqd
+        command: /nsqd -log-level debug
         ports:
             - 4150:4150
             - 4151:4151

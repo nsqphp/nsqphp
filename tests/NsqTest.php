@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Nsq\Config\ClientConfig;
 use Nsq\Consumer;
-use Nsq\Message;
 use Nsq\Producer;
+use Nsq\Protocol\Message;
 use Nsq\Subscriber;
 use Nyholm\NSA;
 use PHPUnit\Framework\TestCase;
@@ -20,7 +20,7 @@ final class NsqTest extends TestCase
         $consumer = new Consumer(
             address: 'tcp://localhost:4150',
             clientConfig: new ClientConfig(
-                heartbeatInterval: 1000,
+                heartbeatInterval: 3000,
                 readTimeout: 1,
             ),
         );

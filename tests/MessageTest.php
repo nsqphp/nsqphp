@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Nsq\Consumer;
 use Nsq\Exception\MessageAlreadyFinished;
-use Nsq\Message;
+use Nsq\Protocol\Message;
 use PHPUnit\Framework\TestCase;
 
 final class MessageTest extends TestCase

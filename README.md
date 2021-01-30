@@ -65,7 +65,7 @@ $producer->dpub('topic', 'Deferred message', delay: 5000);
 
 ```php
 use Nsq\Consumer;
-use Nsq\Message;
+use Nsq\Protocol\Message;
 use Nsq\Subscriber;
 
 $consumer = new Consumer('tcp://nsqd:4150');

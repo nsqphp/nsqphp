@@ -8,7 +8,14 @@ use Nsq\Config\ClientConfig;
 use Nsq\Config\ConnectionConfig;
 use Nsq\Exception\AuthenticationRequired;
 use Nsq\Exception\ConnectionFail;
-use Nsq\Exception\UnexpectedResponse;
+use Nsq\Exception\NsqError;
+use Nsq\Exception\BadResponse;
+use Nsq\Exception\NsqException;
+use Nsq\Exception\NullReceived;
+use Nsq\Protocol\Error;
+use Nsq\Protocol\Frame;
+use Nsq\Protocol\Message;
+use Nsq\Protocol\Response;
 use Nsq\Reconnect\ExponentialStrategy;
 use Nsq\Reconnect\ReconnectStrategy;
 use PHPinnacle\Buffer\ByteBuffer;
@@ -77,20 +84,27 @@ abstract class Connection
 
             $body = json_encode($this->clientConfig, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
 
-            $response = $this->command('IDENTIFY', data: $body)->response();
-
-            $this->connectionConfig = ConnectionConfig::fromArray($response->toArray());
+            $this->connectionConfig = ConnectionConfig::fromArray(
+                $this
+                    ->command('IDENTIFY', data: $body)
+                    ->readResponse()
+                    ->toArray()
+            );
 
             if ($this->connectionConfig->snappy || $this->connectionConfig->deflate) {
-                $this->response()->okOrFail();
+                $this->checkIsOK();
             }
 
             if ($this->connectionConfig->authRequired) {
                 if (null === $this->clientConfig->authSecret) {
-                    throw new AuthenticationRequired('NSQ requires authorization, set ClientConfig::$authSecret before connecting');
+                    throw new AuthenticationRequired();
                 }
 
-                $authResponse = $this->command('AUTH', data: $this->clientConfig->authSecret)->response()->toArray();
+                $authResponse = $this
+                    ->command('AUTH', data: $this->clientConfig->authSecret)
+                    ->readResponse()
+                    ->toArray()
+                ;
 
                 $this->logger->info('Authorization response: '.http_build_query($authResponse));
             }
@@ -171,7 +185,7 @@ abstract class Connection
         // @codeCoverageIgnoreEnd
     }
 
-    public function receive(float $timeout = null): ?Response
+    protected function readFrame(float $timeout = null): ?Frame
     {
         $socket = $this->socket();
 
@@ -206,12 +220,23 @@ abstract class Connection
 
             $this->logger->debug('Received buffer: '.addcslashes($buffer->bytes(), PHP_EOL));
 
-            $response = new Response($buffer);
+            $frame = match ($type = $buffer->consumeUint32()) {
+                0 => new Response($buffer->flush()),
+                1 => new Error($buffer->flush()),
+                2 => new Message(
+                    timestamp: $buffer->consumeInt64(),
+                    attempts: $buffer->consumeUint16(),
+                    id: $buffer->consume(Bytes::BYTES_ID),
+                    body: $buffer->flush(),
+                    consumer: $this instanceof Consumer ? $this : throw new NsqException('what?'),
+                ),
+                default => throw new NsqException('Unexpected frame type: '.$type)
+            };
 
-            if ($response->isHeartBeat()) {
+            if ($frame instanceof Response && $frame->isHeartBeat()) {
                 $this->command('NOP');
 
-                return $this->receive(
+                return $this->readFrame(
                     ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime
                 );
             }
@@ -224,12 +249,35 @@ abstract class Connection
         }
         // @codeCoverageIgnoreEnd
 
-        return $response;
+        return $frame;
     }
 
-    protected function response(): Response
+    protected function checkIsOK(): void
     {
-        return $this->receive() ?? throw UnexpectedResponse::null();
+        $response = $this->readResponse();
+
+        if (!$response->isOk()) {
+            throw new BadResponse($response);
+        }
+    }
+
+    private function readResponse(): Response
+    {
+        $frame = $this->readFrame() ?? throw new NullReceived();
+
+        if ($frame instanceof Response) {
+            return $frame;
+        }
+
+        if ($frame instanceof Error) {
+            if ($frame->type->terminateConnection) {
+                $this->disconnect();
+            }
+
+            throw new NsqError($frame);
+        }
+
+        throw new NsqException('Unreachable statement.');
     }
 
     private function socket(): Socket
