@@ -4,21 +4,34 @@ declare(strict_types=1);
 
 namespace Nsq;
 
+use Nsq\Config\ClientConfig;
 use Nsq\Exception\NsqError;
 use Nsq\Exception\NsqException;
 use Nsq\Protocol\Error;
 use Nsq\Protocol\Message;
+use Nsq\Reconnect\ReconnectStrategy;
+use Psr\Log\LoggerInterface;
 
 final class Consumer extends Connection
 {
     private int $rdy = 0;
 
-    /**
-     * Subscribe to a topic/channel.
-     */
-    public function sub(string $topic, string $channel): void
+    public function __construct(
+        private string $topic,
+        private string $channel,
+        string $address,
+        ClientConfig $clientConfig = null,
+        ReconnectStrategy $reconnectStrategy = null,
+        LoggerInterface $logger = null
+    ) {
+        parent::__construct($address, $clientConfig, $reconnectStrategy, $logger);
+    }
+
+    public function connect(): void
     {
-        $this->command('SUB', [$topic, $channel])->checkIsOK();
+        parent::connect();
+
+        $this->command('SUB', [$this->topic, $this->channel])->checkIsOK();
     }
 
     public function readMessage(): ?Message

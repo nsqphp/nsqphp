@@ -68,10 +68,14 @@ use Nsq\Consumer;
 use Nsq\Protocol\Message;
 use Nsq\Subscriber;
 
-$consumer = new Consumer('tcp://nsqd:4150');
-$subscriber = new Subscriber($consumer);
+$consumer = new Consumer(
+    topic: 'topic', 
+    channel: 'channel',
+    address: 'tcp://nsqd:4150',
+);
 
-$generator = $subscriber->subscribe('topic', 'channel');
+$generator = (new Subscriber($consumer))->run();
+
 foreach ($generator as $message) {
     if ($message instanceof Message) {
         $payload = $message->body;

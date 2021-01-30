@@ -19,12 +19,10 @@ final class Subscriber
     }
 
     /**
-     * @psalm-return Generator<int, Message|float|null, int|float|null, void>
+     * @psalm-return Generator<int, Message|float|null, int|null, void>
      */
-    public function subscribe(string $topic, string $channel): Generator
+    public function run(): Generator
     {
-        $this->reader->sub($topic, $channel);
-
         while (true) {
             $this->reader->rdy(1);
 

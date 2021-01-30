@@ -18,6 +18,8 @@ final class NsqTest extends TestCase
         $producer->pub(__FUNCTION__, __FUNCTION__);
 
         $consumer = new Consumer(
+            topic: 'test',
+            channel: 'test',
             address: 'tcp://localhost:4150',
             clientConfig: new ClientConfig(
                 heartbeatInterval: 3000,
@@ -25,7 +27,7 @@ final class NsqTest extends TestCase
             ),
         );
         $subscriber = new Subscriber($consumer);
-        $generator = $subscriber->subscribe(__FUNCTION__, __FUNCTION__);
+        $generator = $subscriber->run();
 
         /** @var null|Message $message */
         $message = $generator->current();
