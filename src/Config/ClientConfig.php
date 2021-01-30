@@ -18,23 +18,32 @@ use function gethostname;
  */
 final class ClientConfig implements JsonSerializable
 {
-    /** @psalm-suppress ImpureFunctionCall */
+    /**
+     * @psalm-suppress ImpureFunctionCall
+     */
     public function __construct(
-        /*
+        /**
          * The secret used for authorization, if the server requires it. This value will be ignored if the server
          * does not require authorization.
          */
         public ?string $authSecret = null,
 
-        // The timeout for establishing a connection in seconds.
+        /**
+         * The timeout for establishing a connection in seconds.
+         */
         public int $connectTimeout = 10,
 
-        // An identifier used to disambiguate this client (i.e. something specific to the consumer)
+        /**
+         * An identifier used to disambiguate this client (i.e. something specific to the consumer).
+         */
         public string $clientId = '',
 
-        // Enable deflate compression for this connection. A client cannot enable both [snappy] and [deflate].
+        /**
+         * Enable deflate compression for this connection. A client cannot enable both [snappy] and [deflate].
+         */
         public bool $deflate = false,
-        /*
+
+        /**
          * Configure the deflate compression level for this connection.
          *
          * Valid range: `1 <= deflate_level <= configured_max`
@@ -43,42 +52,54 @@ final class ClientConfig implements JsonSerializable
          */
         public int $deflateLevel = 6,
 
-        /*
+        /**
          * Milliseconds between heartbeats.
          *
          * Valid range: `1000 <= heartbeat_interval <= configured_max` (`-1` disables heartbeats)
          */
         public int $heartbeatInterval = 30000,
 
-        // The hostname where the client is deployed
+        /**
+         * The hostname where the client is deployed.
+         */
         public string $hostname = '',
 
-        // Configure the server-side message timeout in milliseconds for messages delivered to this client.
+        /**
+         * Configure the server-side message timeout in milliseconds for messages delivered to this client.
+         */
         public int $msgTimeout = 60000,
 
-        /*
+        /**
          * The sample rate for incoming data to deliver a percentage of all messages received to this connection.
          * This only applies to subscribing connections. The valid range is between 0 and 99, where 0 means that all
          * data is sent (this is the default). 1 means that 1% of the data is sent.
          */
         public int $sampleRate = 0,
 
-        /*
+        /**
          * Boolean used to indicate that the client supports feature negotiation. If the server is capable,
          * it will send back a JSON payload of supported features and metadata.
          */
         public bool $featureNegotiation = true,
 
-        // Enable TLS for this connection
+        /**
+         * Enable TLS for this connection.
+         */
         public bool $tls = false,
 
-        // Enable snappy compression for this connection. A client cannot enable both [snappy] and [deflate].
+        /**
+         * Enable snappy compression for this connection. A client cannot enable both [snappy] and [deflate].
+         */
         public bool $snappy = false,
 
-        // The read timeout for connection sockets and for awaiting responses from nsq.
+        /**
+         * The read timeout for connection sockets and for awaiting responses from nsq.
+         */
         public int $readTimeout = 5,
 
-        // A string identifying the agent for this client in the spirit of HTTP.
+        /**
+         * A string identifying the agent for this client in the spirit of HTTP.
+         */
         public string $userAgent = '',
     ) {
         $this->featureNegotiation = true; // Always enabled
