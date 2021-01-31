@@ -44,9 +44,15 @@ final class NsqSocket
     {
         $buffer = $this->input;
 
-        $buffer->append(
-            $this->socket->read(Bytes::BYTES_SIZE),
-        );
+        $size = Bytes::BYTES_SIZE;
+
+        do {
+            $buffer->append(
+                $this->socket->read($size),
+            );
+
+            $size -= $buffer->size();
+        } while ($buffer->size() < Bytes::BYTES_SIZE);
 
         if ('' === $buffer->bytes()) {
             throw new ConnectionFail('Probably connection closed.');
