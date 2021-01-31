@@ -164,6 +164,12 @@ abstract class Connection
     {
         $response = $this->readResponse();
 
+        if ($response->isHeartBeat()) {
+            $this->command('NOP');
+
+            $response = $this->readResponse();
+        }
+
         if (!$response->isOk()) {
             throw new BadResponse($response);
         }
