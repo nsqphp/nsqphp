@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Nsq;
 
-use function array_map;
-use function implode;
-use function pack;
+use PHPinnacle\Buffer\ByteBuffer;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
@@ -19,19 +17,21 @@ final class Producer extends Connection
     }
 
     /**
-     * @psalm-param array<mixed, mixed> $bodies
-     *
-     * @psalm-suppress PossiblyFalseOperand
+     * @psalm-param array<int, mixed> $bodies
      */
     public function mpub(string $topic, array $bodies): void
     {
-        $num = pack('N', \count($bodies));
+        static $buffer;
+        $buffer ??= new ByteBuffer();
 
-        $mb = implode('', array_map(static function ($body): string {
-            return pack('N', \strlen($body)).$body;
-        }, $bodies));
+        $buffer->appendUint32(\count($bodies));
 
-        $this->command('MPUB', $topic, $num.$mb)->checkIsOK();
+        foreach ($bodies as $body) {
+            $buffer->appendUint32(\strlen($body));
+            $buffer->append($body);
+        }
+
+        $this->command('MPUB', $topic, $buffer->flush())->checkIsOK();
     }
 
     public function dpub(string $topic, string $body, int $delay): void
