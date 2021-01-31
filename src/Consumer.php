@@ -12,7 +12,6 @@ use Nsq\Protocol\Error;
 use Nsq\Protocol\Message;
 use Nsq\Protocol\Response;
 use Psr\Log\LoggerInterface;
-use function microtime;
 
 final class Consumer extends Connection
 {
@@ -31,7 +30,7 @@ final class Consumer extends Connection
     /**
      * @psalm-return Generator<int, Message|float|null, int|null, void>
      */
-    public function generator(): Generator
+    public function generator(): \Generator
     {
         $this->command('SUB', [$this->topic, $this->channel])->checkIsOK();
 

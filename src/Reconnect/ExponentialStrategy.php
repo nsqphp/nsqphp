@@ -8,7 +8,6 @@ use Nsq\Exception\ConnectionFail;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Throwable;
 
 final class ExponentialStrategy implements ReconnectStrategy
 {
@@ -47,7 +46,7 @@ final class ExponentialStrategy implements ReconnectStrategy
 
         try {
             $callable();
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $nextDelay = 0 === $this->delay ? $this->minDelay : $this->delay * 2;
             $this->delay = $nextDelay > $this->maxDelay ? $this->maxDelay : $nextDelay;
             $this->nextTryAfter = $currentTime + $this->delay;

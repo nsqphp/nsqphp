@@ -8,7 +8,6 @@ use Nsq\Exception\ConnectionFail;
 use Nsq\Socket\Socket;
 use PHPinnacle\Buffer\ByteBuffer;
 use Throwable;
-use const PHP_EOL;
 
 final class NsqSocket
 {

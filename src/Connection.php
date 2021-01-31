@@ -22,11 +22,6 @@ use Nsq\Socket\SnappySocket;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Throwable;
-use function addcslashes;
-use function http_build_query;
-use function implode;
-use const PHP_EOL;
 
 /**
  * @internal
@@ -111,7 +106,7 @@ abstract class Connection
         try {
             $this->command('CLS');
             $this->socket->close();
-        } catch (Throwable) {
+        } catch (\Throwable $e) {
         }
 
         $this->closed = true;

@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Protocol;
 
-use Generator;
 use Nsq\Protocol\ErrorType;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 
 final class ErrorTypeTest extends TestCase
 {
@@ -21,11 +19,11 @@ final class ErrorTypeTest extends TestCase
     }
 
     /**
-     * @return Generator<string, array<int, bool|string>>
+     * @return \Generator<string, array<int, bool|string>>
      */
-    public function data(): Generator
+    public function data(): \Generator
     {
-        foreach ((new ReflectionClass(ErrorType::class))->getConstants() as $constant => $isTerminated) {
+        foreach ((new \ReflectionClass(ErrorType::class))->getConstants() as $constant => $isTerminated) {
             yield $constant => [$constant, $isTerminated];
         }
     }

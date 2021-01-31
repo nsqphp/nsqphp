@@ -6,10 +6,6 @@ namespace Nsq\Socket;
 
 use PHPinnacle\Buffer\ByteBuffer;
 use Psr\Log\LoggerInterface;
-use function hash;
-use function pack;
-use function str_split;
-use function unpack;
 
 final class SnappySocket implements Socket
 {

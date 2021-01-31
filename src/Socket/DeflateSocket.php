@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Nsq\Socket;
 
-use LogicException;
-
 final class DeflateSocket implements Socket
 {
     public function __construct(
@@ -18,7 +16,7 @@ final class DeflateSocket implements Socket
      */
     public function write(string $data): void
     {
-        throw new LogicException('not implemented.');
+        throw new \LogicException('not implemented.');
     }
 
     /**
@@ -26,7 +24,7 @@ final class DeflateSocket implements Socket
      */
     public function read(int $length): string
     {
-        throw new LogicException('not implemented.');
+        throw new \LogicException('not implemented.');
     }
 
     /**
@@ -34,7 +32,7 @@ final class DeflateSocket implements Socket
      */
     public function close(): void
     {
-        throw new LogicException('not implemented.');
+        throw new \LogicException('not implemented.');
     }
 
     /**

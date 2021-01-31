@@ -5,12 +5,6 @@ declare(strict_types=1);
 namespace Nsq\Config;
 
 use Composer\InstalledVersions;
-use InvalidArgumentException;
-use JsonSerializable;
-use function gethostname;
-use function json_encode;
-use const JSON_FORCE_OBJECT;
-use const JSON_THROW_ON_ERROR;
 
 /**
  * This class is used for configuring the clients for nsq. Immutable properties must be set when creating the object and
@@ -19,7 +13,7 @@ use const JSON_THROW_ON_ERROR;
  *
  * @psalm-immutable
  */
-final class ClientConfig implements JsonSerializable
+final class ClientConfig implements \JsonSerializable
 {
     /**
      * @psalm-suppress ImpureFunctionCall
@@ -116,7 +110,7 @@ final class ClientConfig implements JsonSerializable
         }
 
         if ($this->snappy && $this->deflate) {
-            throw new InvalidArgumentException('Client cannot enable both [snappy] and [deflate]');
+            throw new \InvalidArgumentException('Client cannot enable both [snappy] and [deflate]');
         }
     }
 

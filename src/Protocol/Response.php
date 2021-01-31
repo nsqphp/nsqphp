@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Nsq\Protocol;
 
 use Nsq\Bytes;
-use function json_decode;
-use const JSON_THROW_ON_ERROR;
 
 /**
  * @psalm-immutable

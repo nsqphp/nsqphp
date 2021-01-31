@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Nsq\Protocol;
 
 use Nsq\Bytes;
-use function explode;
 
 /**
  * @psalm-immutable
