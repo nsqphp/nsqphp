@@ -188,7 +188,9 @@ abstract class Connection
         if ($response->isHeartBeat()) {
             $this->command('NOP');
 
-            $response = $this->readResponse();
+            $this->checkIsOK();
+
+            return;
         }
 
         if (!$response->isOk()) {
