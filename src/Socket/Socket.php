@@ -8,13 +8,6 @@ use Nsq\Exception\ConnectionFail;
 
 interface Socket
 {
-    public function close(): void;
-
-    /**
-     * @throws ConnectionFail
-     */
-    public function selectRead(float $timeout): bool;
-
     /**
      * @throws ConnectionFail
      */
@@ -24,4 +17,11 @@ interface Socket
      * @throws ConnectionFail
      */
     public function read(int $length): string;
+
+    /**
+     * @throws ConnectionFail
+     */
+    public function selectRead(float $timeout): bool;
+
+    public function close(): void;
 }

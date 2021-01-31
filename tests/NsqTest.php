@@ -11,7 +11,10 @@ use PHPUnit\Framework\TestCase;
 
 final class NsqTest extends TestCase
 {
-    public function test(): void
+    /**
+     * @dataProvider configs
+     */
+    public function test(ClientConfig $clientConfig): void
     {
         $producer = new Producer('tcp://localhost:4150');
         $producer->pub(__FUNCTION__, __FUNCTION__);
@@ -20,10 +23,7 @@ final class NsqTest extends TestCase
             topic: 'test',
             channel: 'test',
             address: 'tcp://localhost:4150',
-            clientConfig: new ClientConfig(
-                heartbeatInterval: 3000,
-                readTimeout: 1,
-            ),
+            clientConfig: $clientConfig,
         );
         $generator = $consumer->generator();
 
@@ -88,5 +88,27 @@ final class NsqTest extends TestCase
         self::assertFalse($consumer->isClosed());
         $generator->send(0);
         self::assertTrue($consumer->isClosed());
+    }
+
+    /**
+     * @return Generator<string, array<int, ClientConfig>>
+     */
+    public function configs(): Generator
+    {
+        yield 'default' => [
+            new ClientConfig(
+                heartbeatInterval: 3000,
+                snappy: false,
+                readTimeout: 1,
+            ),
+        ];
+
+        yield 'snappy' => [
+            new ClientConfig(
+                heartbeatInterval: 3000,
+                snappy: true,
+                readTimeout: 1,
+            ),
+        ];
     }
 }

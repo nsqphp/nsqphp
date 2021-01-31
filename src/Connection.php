@@ -16,7 +16,9 @@ use Nsq\Protocol\Error;
 use Nsq\Protocol\Frame;
 use Nsq\Protocol\Message;
 use Nsq\Protocol\Response;
+use Nsq\Socket\DeflateSocket;
 use Nsq\Socket\RawSocket;
+use Nsq\Socket\SnappySocket;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -61,7 +63,24 @@ abstract class Connection
                 ->toArray()
         );
 
-        if ($this->connectionConfig->snappy || $this->connectionConfig->deflate) {
+        if ($this->connectionConfig->snappy) {
+            $this->socket = new NsqSocket(
+                new SnappySocket(
+                    $socket,
+                    $this->logger,
+                ),
+            );
+
+            $this->checkIsOK();
+        }
+
+        if ($this->connectionConfig->deflate) {
+            $this->socket = new NsqSocket(
+                new DeflateSocket(
+                    $socket,
+                ),
+            );
+
             $this->checkIsOK();
         }
 
@@ -115,6 +134,8 @@ abstract class Connection
         $command = [] === $params
             ? $command
             : implode(' ', [$command, ...((array) $params)]);
+
+        $this->logger->info('Command [{command}] with data [{data}]', ['command' => $command, 'data' => $data ?? 'null']);
 
         $this->socket->write($command, $data);
 
@@ -173,6 +194,8 @@ abstract class Connection
         if (!$response->isOk()) {
             throw new BadResponse($response);
         }
+
+        $this->logger->info('Ok checked.');
     }
 
     private function readResponse(): Response
