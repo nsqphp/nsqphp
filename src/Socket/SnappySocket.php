@@ -8,8 +8,6 @@ use PHPinnacle\Buffer\ByteBuffer;
 use Psr\Log\LoggerInterface;
 use function hash;
 use function pack;
-use function snappy_compress;
-use function snappy_uncompress;
 use function str_split;
 use function unpack;
 
@@ -23,6 +21,14 @@ final class SnappySocket implements Socket
         private Socket $socket,
         private LoggerInterface $logger,
     ) {
+        if (
+            !\function_exists('snappy_compress')
+            || !\function_exists('snappy_uncompress')
+        || !\extension_loaded('snappy')
+        ) {
+            throw new \LogicException('Snappy extension not installed.');
+        }
+
         $this->output = new ByteBuffer();
         $this->input = new ByteBuffer();
     }
