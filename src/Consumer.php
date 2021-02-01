@@ -98,6 +98,8 @@ final class Consumer extends Connection
 
     /**
      * Finish a message (indicate successful processing).
+     *
+     * @internal
      */
     public function fin(string $id): void
     {
@@ -107,10 +109,12 @@ final class Consumer extends Connection
     }
 
     /**
-     * Re-queue a message (indicate failure to process)
-     * The re-queued message is placed at the tail of the queue, equivalent to having just published it,
-     * but for various implementation specific reasons that behavior should not be explicitly relied upon and may change in the future.
-     * Similarly, a message that is in-flight and times out behaves identically to an explicit REQ.
+     * Re-queue a message (indicate failure to process) The re-queued message is placed at the tail of the queue,
+     * equivalent to having just published it, but for various implementation specific reasons that behavior should not
+     * be explicitly relied upon and may change in the future. Similarly, a message that is in-flight and times out
+     * behaves identically to an explicit REQ.
+     *
+     * @internal
      */
     public function req(string $id, int $timeout): void
     {
@@ -121,6 +125,8 @@ final class Consumer extends Connection
 
     /**
      * Reset the timeout for an in-flight message.
+     *
+     * @internal
      */
     public function touch(string $id): void
     {
