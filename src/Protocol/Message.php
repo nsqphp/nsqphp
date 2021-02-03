@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nsq\Protocol;
 
+use Amp\Failure;
+use Amp\Promise;
 use Nsq\Bytes;
 use Nsq\Consumer;
 use Nsq\Exception\MessageAlreadyFinished;
@@ -57,32 +59,43 @@ final class Message extends Frame
         return $this->finished;
     }
 
-    public function finish(): void
+    /**
+     * @return Promise<void>
+     */
+    public function finish(): Promise
     {
         if ($this->finished) {
-            throw MessageAlreadyFinished::finish($this);
+            return new Failure(MessageAlreadyFinished::finish($this));
         }
 
-        $this->consumer->fin($this->id);
         $this->finished = true;
+
+        return $this->consumer->fin($this->id);
     }
 
-    public function requeue(int $timeout): void
+    /**
+     * @return Promise<void>
+     */
+    public function requeue(int $timeout): Promise
     {
         if ($this->finished) {
-            throw MessageAlreadyFinished::requeue($this);
+            return new Failure(MessageAlreadyFinished::requeue($this));
         }
 
-        $this->consumer->req($this->id, $timeout);
         $this->finished = true;
+
+        return $this->consumer->req($this->id, $timeout);
     }
 
-    public function touch(): void
+    /**
+     * @return Promise<void>
+     */
+    public function touch(): Promise
     {
         if ($this->finished) {
-            throw MessageAlreadyFinished::touch($this);
+            return new Failure(MessageAlreadyFinished::touch($this));
         }
 
-        $this->consumer->touch($this->id);
+        return $this->consumer->touch($this->id);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Nsq\Exception\NsqError;
 use Nsq\Producer;
 use PHPUnit\Framework\TestCase;
+use function Amp\Promise\wait;
 
 final class ProducerTest extends TestCase
 {
@@ -17,7 +18,9 @@ final class ProducerTest extends TestCase
         $this->expectExceptionMessage($exceptionMessage);
 
         $producer = new Producer('tcp://localhost:4150');
-        $producer->pub($topic, $body);
+
+        wait($producer->connect());
+        wait($producer->pub($topic, $body));
     }
 
     /**

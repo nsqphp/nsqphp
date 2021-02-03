@@ -4,38 +4,56 @@ declare(strict_types=1);
 
 namespace Nsq;
 
+use Amp\Promise;
 use PHPinnacle\Buffer\ByteBuffer;
+use function Amp\call;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
  */
 final class Producer extends Connection
 {
-    public function pub(string $topic, string $body): void
+    /**
+     * @return Promise<void>
+     */
+    public function pub(string $topic, string $body): Promise
     {
-        $this->command('PUB', $topic, $body)->checkIsOK();
+        return call(function () use ($topic, $body): \Generator {
+            yield $this->command('PUB', $topic, $body);
+            yield $this->checkIsOK();
+        });
     }
 
     /**
      * @psalm-param array<int, mixed> $bodies
+     *
+     * @return Promise<void>
      */
-    public function mpub(string $topic, array $bodies): void
+    public function mpub(string $topic, array $bodies): Promise
     {
-        static $buffer;
-        $buffer ??= new ByteBuffer();
+        return call(function () use ($topic, $bodies): \Generator {
+            $buffer = new ByteBuffer();
 
-        $buffer->appendUint32(\count($bodies));
+            $buffer->appendUint32(\count($bodies));
 
-        foreach ($bodies as $body) {
-            $buffer->appendUint32(\strlen($body));
-            $buffer->append($body);
-        }
+            foreach ($bodies as $body) {
+                $buffer->appendUint32(\strlen($body));
+                $buffer->append($body);
+            }
 
-        $this->command('MPUB', $topic, $buffer->flush())->checkIsOK();
+            yield $this->command('MPUB', $topic, $buffer->flush());
+            yield $this->checkIsOK();
+        });
     }
 
-    public function dpub(string $topic, string $body, int $delay): void
+    /**
+     * @return Promise<void>
+     */
+    public function dpub(string $topic, string $body, int $delay): Promise
     {
-        $this->command('DPUB', [$topic, $delay], $body)->checkIsOK();
+        return call(function () use ($topic, $body, $delay): \Generator {
+            yield $this->command('DPUB', [$topic, $delay], $body);
+            yield $this->checkIsOK();
+        });
     }
 }

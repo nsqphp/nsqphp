@@ -4,108 +4,114 @@ declare(strict_types=1);
 
 namespace Nsq;
 
-use Generator;
-use Nsq\Config\ClientConfig;
+use Amp\Failure;
+use Amp\Promise;
+use Amp\Success;
 use Nsq\Exception\NsqError;
 use Nsq\Exception\NsqException;
 use Nsq\Protocol\Error;
 use Nsq\Protocol\Message;
 use Nsq\Protocol\Response;
-use Psr\Log\LoggerInterface;
+use function Amp\asyncCall;
+use function Amp\call;
 
 final class Consumer extends Connection
 {
     private int $rdy = 0;
 
-    public function __construct(
-        private string $topic,
-        private string $channel,
-        string $address,
-        ClientConfig $clientConfig = null,
-        LoggerInterface $logger = null
-    ) {
-        parent::__construct($address, $clientConfig, $logger);
+    /**
+     * @return Promise<void>
+     */
+    public function listen(
+        string $topic,
+        string $channel,
+        callable $onMessage,
+    ): Promise {
+        return call(function () use ($topic, $channel, $onMessage): \Generator {
+            yield $this->command('SUB', [$topic, $channel]);
+            yield $this->checkIsOK();
+
+            asyncCall(function () use ($onMessage): \Generator {
+                yield $this->rdy(2500);
+
+                while ($message = yield $this->readMessage()) {
+                    $command = yield $onMessage($message);
+
+                    if (true === $command) {
+                        break;
+                    }
+
+                    if ($this->rdy < 1000) {
+                        yield $this->rdy(2500);
+                    }
+                }
+
+                return new Success();
+            });
+        });
     }
 
     /**
-     * @psalm-return Generator<int, Message|float|null, int|null, void>
+     * @return Promise<Message>
      */
-    public function generator(): \Generator
+    public function readMessage(): Promise
     {
-        $this->command('SUB', [$this->topic, $this->channel])->checkIsOK();
+        return call(function (): \Generator {
+            $frame = yield $this->readFrame();
 
-        while (true) {
-            $this->rdy(1);
-
-            $timeout = $this->clientConfig->readTimeout;
-
-            do {
-                $deadline = microtime(true) + $timeout;
-
-                $message = $this->hasMessage($timeout) ? $this->readMessage() : null;
-
-                $timeout = ($currentTime = microtime(true)) > $deadline ? 0 : $deadline - $currentTime;
-            } while (0 < $timeout && null === $message);
-
-            $command = yield $message;
-
-            if (0 === $command) {
-                break;
-            }
-        }
-
-        $this->close();
-    }
-
-    public function readMessage(): ?Message
-    {
-        $frame = $this->readFrame();
-
-        if ($frame instanceof Message) {
-            return $frame;
-        }
-
-        if ($frame instanceof Response && $frame->isHeartBeat()) {
-            $this->command('NOP');
-
-            return null;
-        }
-
-        if ($frame instanceof Error) {
-            if ($frame->type->terminateConnection) {
-                $this->close();
+            if ($frame instanceof Message) {
+                return $frame;
             }
 
-            throw new NsqError($frame);
-        }
+            if ($frame instanceof Response && $frame->isHeartBeat()) {
+                yield $this->command('NOP');
 
-        throw new NsqException('Unreachable statement.');
+                return $this->readMessage();
+            }
+
+            if ($frame instanceof Error) {
+                if ($frame->type->terminateConnection) {
+                    yield $this->close();
+                }
+
+                return new Failure(new NsqError($frame));
+            }
+
+            return new Failure(new NsqException('Unreachable statement.'));
+        });
     }
 
     /**
      * Update RDY state (indicate you are ready to receive N messages).
+     *
+     * @return Promise<void>
      */
-    public function rdy(int $count): void
+    public function rdy(int $count): Promise
     {
         if ($this->rdy === $count) {
-            return;
+            return call(static function (): void {});
         }
 
-        $this->command('RDY', (string) $count);
-
         $this->rdy = $count;
+
+        return $this->command('RDY', (string) $count);
     }
 
     /**
      * Finish a message (indicate successful processing).
      *
+     * @return Promise<void>
+     *
      * @internal
      */
-    public function fin(string $id): void
+    public function fin(string $id): Promise
     {
-        $this->command('FIN', $id);
+        $promise = $this->command('FIN', $id);
+        $promise->onResolve(function (): void {
+            --$this->rdy;
+        });
 
-        --$this->rdy;
+        return $promise;
     }
 
     /**
@@ -114,22 +120,29 @@ final class Consumer extends Connection
      * be explicitly relied upon and may change in the future. Similarly, a message that is in-flight and times out
      * behaves identically to an explicit REQ.
      *
+     * @return Promise<void>
+     *
      * @internal
      */
-    public function req(string $id, int $timeout): void
+    public function req(string $id, int $timeout): Promise
     {
-        $this->command('REQ', [$id, $timeout]);
+        $promise = $this->command('REQ', [$id, $timeout]);
+        $promise->onResolve(function (): void {
+            --$this->rdy;
+        });
 
-        --$this->rdy;
+        return $promise;
     }
 
     /**
      * Reset the timeout for an in-flight message.
      *
+     * @return Promise<void>
+     *
      * @internal
      */
-    public function touch(string $id): void
+    public function touch(string $id): Promise
     {
-        $this->command('TOUCH', $id);
+        return $this->command('TOUCH', $id);
     }
 }

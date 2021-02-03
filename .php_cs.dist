@@ -8,6 +8,9 @@ return (new PhpCsFixer\Config())
         '@PhpCsFixer:risky' => true,
         '@PSR12' => true,
         '@PSR12:risky' => true,
+        'braces' => [
+            'allow_single_line_closure' => true,
+        ],
         'blank_line_before_statement' => [
             'statements' => ['continue', 'do', 'die', 'exit', 'goto', 'if', 'return', 'switch', 'throw', 'try'],
         ],

@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use Amp\Success;
 use Nsq\Consumer;
 use Nsq\Exception\MessageAlreadyFinished;
 use Nsq\Protocol\Message;
 use PHPUnit\Framework\TestCase;
+use function Amp\Promise\wait;
 
 final class MessageTest extends TestCase
 {
@@ -16,14 +18,14 @@ final class MessageTest extends TestCase
     {
         self::assertFalse($message->isFinished());
 
-        $message->finish();
+        wait($message->finish());
 
         self::assertTrue($message->isFinished());
 
         $this->expectException(MessageAlreadyFinished::class);
         $this->expectExceptionMessage('Can\'t finish message as it already finished.');
 
-        $message->finish();
+        wait($message->finish());
     }
 
     /**
@@ -33,14 +35,14 @@ final class MessageTest extends TestCase
     {
         self::assertFalse($message->isFinished());
 
-        $message->requeue(1);
+        wait($message->requeue(1));
 
         self::assertTrue($message->isFinished());
 
         $this->expectException(MessageAlreadyFinished::class);
         $this->expectExceptionMessage('Can\'t requeue message as it already finished.');
 
-        $message->requeue(5);
+        wait($message->requeue(5));
     }
 
     /**
@@ -50,12 +52,12 @@ final class MessageTest extends TestCase
     {
         self::assertFalse($message->isFinished());
 
-        $message->finish();
+        wait($message->finish());
 
         $this->expectException(MessageAlreadyFinished::class);
         $this->expectExceptionMessage('Can\'t touch message as it already finished.');
 
-        $message->touch();
+        wait($message->touch());
     }
 
     /**
@@ -63,6 +65,11 @@ final class MessageTest extends TestCase
      */
     public function messages(): Generator
     {
-        yield [new Message(0, 0, 'id', 'body', $this->createStub(Consumer::class))];
+        $consumer = $this->createMock(Consumer::class);
+        $consumer->method('fin')->willReturn(new Success());
+        $consumer->method('touch')->willReturn(new Success());
+        $consumer->method('req')->willReturn(new Success());
+
+        yield [new Message(0, 0, 'id', 'body', $consumer)];
     }
 }
