@@ -63,21 +63,15 @@ final class Consumer extends Connection
                 return $frame;
             }
 
-            if ($frame instanceof Response && $frame->isHeartBeat()) {
-                yield $this->command('NOP');
-
-                return $this->readMessage();
-            }
-
             if ($frame instanceof Error) {
                 if ($frame->type->terminateConnection) {
                     yield $this->close();
                 }
 
-                return new Failure(new NsqError($frame));
+                throw new NsqError($frame);
             }
 
-            return new Failure(new NsqException('Unreachable statement.'));
+            throw new NsqException('Unreachable statement.');
         });
     }
 
