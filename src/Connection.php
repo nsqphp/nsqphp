@@ -159,9 +159,7 @@ abstract class Connection
             return new Failure(new NotConnected());
         }
 
-        $command = [] === $params
-            ? $command
-            : implode(' ', [$command, ...((array) $params)]);
+        $command = implode(' ', [$command, ...((array) $params)]);
 
         $buffer = $this->buffer->append($command.PHP_EOL);
 
