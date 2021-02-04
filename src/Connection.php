@@ -11,6 +11,7 @@ use Amp\ByteStream\ZlibOutputStream;
 use Amp\Failure;
 use Amp\Promise;
 use Amp\Socket\Socket;
+use Amp\Success;
 use Nsq\Config\ClientConfig;
 use Nsq\Config\ConnectionConfig;
 use Nsq\Exception\AuthenticationRequired;
@@ -60,6 +61,11 @@ abstract class Connection
         $this->inputStream = $this->outputStream = new NullStream();
         $this->clientConfig = $clientConfig ?? new ClientConfig();
         $this->logger = $logger ?? new NullLogger();
+    }
+
+    public function __destruct()
+    {
+        $this->close();
     }
 
     /**
@@ -123,7 +129,7 @@ abstract class Connection
     public function close(): Promise
     {
         if (null === $this->socket) {
-            return new Failure(new NotConnected());
+            return new Success();
         }
 
         return call(function (): \Generator {
