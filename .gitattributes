@@ -1,0 +1,21 @@
+# Exclude build/test files from archive
+/.editorconfig          export-ignore
+/.gitattributes         export-ignore
+/.github                export-ignore
+/.gitignore             export-ignore
+/.php_cs                export-ignore
+/.php_cs.dist           export-ignore
+/.psalm                 export-ignore
+/docs                   export-ignore
+/examples               export-ignore
+/infection.json         export-ignore
+/infection.json.dist    export-ignore
+/phpstan.neon           export-ignore
+/phpunit.xml            export-ignore
+/phpunit.xml.dist       export-ignore
+/psalm.xml              export-ignore
+/tests                  export-ignore
+
+# Configure diff output for .php and .phar files.
+*.php diff=php
+*.phar -diff

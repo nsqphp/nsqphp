@@ -1,6 +1,6 @@
 # Nsq PHP
 
-<img src="https://github.com/nsqphp/nsqphp/raw/main/logo.png" alt="" align="left" width="150">
+<img src="https://github.com/nsqphp/nsqphp/raw/main/docs/logo.png" alt="" align="left" width="150">
 
 PHP Client for [NSQ](https://nsq.io/).
 
