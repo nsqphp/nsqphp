@@ -41,7 +41,7 @@ class Parser
                 id: $buffer->consumeMessageID(),
                 body: $buffer->consume($size - self::MESSAGE_HEADER_SIZE),
             ),
-            default => throw new NsqException(\sprintf('Unexpected frame type: "%s"', $type)),
+            default => throw new NsqException(sprintf('Unexpected frame type: "%s"', $type)),
         };
     }
 }
