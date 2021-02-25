@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use Amp\Loop;
 use Amp\Success;
-use Nsq\Consumer;
+use Nsq\ConsumerInterface;
 use Nsq\Exception\MessageException;
 use Nsq\Message;
 use PHPUnit\Framework\TestCase;
-use function Amp\Promise\wait;
 
 final class MessageTest extends TestCase
 {
@@ -16,11 +16,12 @@ final class MessageTest extends TestCase
      */
     public function testDoubleFinish(Message $message): void
     {
-        wait($message->finish());
-
         $this->expectException(MessageException::class);
 
-        wait($message->finish());
+        Loop::run(function () use ($message): Generator {
+            yield $message->finish();
+            yield $message->finish();
+        });
     }
 
     /**
@@ -28,11 +29,12 @@ final class MessageTest extends TestCase
      */
     public function testDoubleRequeue(Message $message): void
     {
-        wait($message->requeue(1));
-
         $this->expectException(MessageException::class);
 
-        wait($message->requeue(5));
+        Loop::run(function () use ($message): Generator {
+            yield $message->requeue(1);
+            yield $message->requeue(5);
+        });
     }
 
     /**
@@ -40,11 +42,12 @@ final class MessageTest extends TestCase
      */
     public function testTouchAfterFinish(Message $message): void
     {
-        wait($message->finish());
-
         $this->expectException(MessageException::class);
 
-        wait($message->touch());
+        Loop::run(function () use ($message): Generator {
+            yield $message->finish();
+            yield $message->touch();
+        });
     }
 
     /**
@@ -52,7 +55,7 @@ final class MessageTest extends TestCase
      */
     public function messages(): Generator
     {
-        $consumer = $this->createMock(Consumer::class);
+        $consumer = $this->createMock(ConsumerInterface::class);
         $consumer->method('fin')->willReturn(new Success());
         $consumer->method('touch')->willReturn(new Success());
         $consumer->method('req')->willReturn(new Success());
