@@ -22,12 +22,20 @@ Loop::run(static function () {
         'tcp://localhost:4150',
         clientConfig: new ClientConfig(
             deflate: false,
-            snappy: false,
+            heartbeatInterval: 5000,
+            snappy: true,
         ),
         logger: $logger,
     );
 
     yield $producer->connect();
 
-    yield $producer->pub(topic: 'topic', body: 'Message body!');
+//    Loop::repeat(2000, function () use ($producer) {
+//        yield $producer->publish(topic: 'local', body: 'Message body!');
+//    });
+
+    while (true) {
+        yield $producer->publish(topic: 'local', body: 'Message body!');
+    }
+//    Loop::stop();
 });

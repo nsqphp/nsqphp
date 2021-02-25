@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Amp\Success;
 use Nsq\Consumer;
-use Nsq\Exception\MessageAlreadyFinished;
-use Nsq\Protocol\Message;
+use Nsq\Exception\MessageException;
+use Nsq\Message;
 use PHPUnit\Framework\TestCase;
 use function Amp\Promise\wait;
 
@@ -16,14 +16,9 @@ final class MessageTest extends TestCase
      */
     public function testDoubleFinish(Message $message): void
     {
-        self::assertFalse($message->isFinished());
-
         wait($message->finish());
 
-        self::assertTrue($message->isFinished());
-
-        $this->expectException(MessageAlreadyFinished::class);
-        $this->expectExceptionMessage('Can\'t finish message as it already finished.');
+        $this->expectException(MessageException::class);
 
         wait($message->finish());
     }
@@ -33,14 +28,9 @@ final class MessageTest extends TestCase
      */
     public function testDoubleRequeue(Message $message): void
     {
-        self::assertFalse($message->isFinished());
-
         wait($message->requeue(1));
 
-        self::assertTrue($message->isFinished());
-
-        $this->expectException(MessageAlreadyFinished::class);
-        $this->expectExceptionMessage('Can\'t requeue message as it already finished.');
+        $this->expectException(MessageException::class);
 
         wait($message->requeue(5));
     }
@@ -50,12 +40,9 @@ final class MessageTest extends TestCase
      */
     public function testTouchAfterFinish(Message $message): void
     {
-        self::assertFalse($message->isFinished());
-
         wait($message->finish());
 
-        $this->expectException(MessageAlreadyFinished::class);
-        $this->expectExceptionMessage('Can\'t touch message as it already finished.');
+        $this->expectException(MessageException::class);
 
         wait($message->touch());
     }
@@ -70,6 +57,6 @@ final class MessageTest extends TestCase
         $consumer->method('touch')->willReturn(new Success());
         $consumer->method('req')->willReturn(new Success());
 
-        yield [new Message(0, 0, 'id', 'body', $consumer)];
+        yield [new Message('id', 'body', 0, 0, $consumer)];
     }
 }

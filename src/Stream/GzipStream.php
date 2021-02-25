@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace Nsq\Stream;
 
 use Amp\Promise;
-use Amp\Success;
+use Nsq\Exception\NsqException;
 use Nsq\Stream;
-use function Amp\call;
 
-final class NullStream implements Stream
+class GzipStream implements Stream
 {
+    public function __construct(private Stream $stream)
+    {
+        throw new NsqException('GzipStream not implemented yet.');
+    }
+
     /**
      * {@inheritdoc}
      */
     public function read(): Promise
     {
-        return new Success(null);
+        return $this->stream->read();
     }
 
     /**
@@ -24,14 +28,11 @@ final class NullStream implements Stream
      */
     public function write(string $data): Promise
     {
-        return call(static function (): void {
-        });
+        return $this->stream->write($data);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function close(): void
     {
+        $this->stream->close();
     }
 }

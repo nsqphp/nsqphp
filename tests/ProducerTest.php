@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Nsq\Exception\NsqError;
+use Amp\Loop;
+use Nsq\Exception\ServerException;
 use Nsq\Producer;
 use PHPUnit\Framework\TestCase;
-use function Amp\Promise\wait;
 
 final class ProducerTest extends TestCase
 {
@@ -14,13 +14,16 @@ final class ProducerTest extends TestCase
      */
     public function testPubFail(string $topic, string $body, string $exceptionMessage): void
     {
-        $this->expectException(NsqError::class);
+        $this->expectException(ServerException::class);
         $this->expectExceptionMessage($exceptionMessage);
 
-        $producer = new Producer('tcp://localhost:4150');
+        $producer = Producer::create('tcp://localhost:4150');
 
-        wait($producer->connect());
-        wait($producer->pub($topic, $body));
+        Loop::run(static function () use ($producer, $topic, $body): Generator {
+            yield $producer->connect();
+
+            yield $producer->publish($topic, $body);
+        });
     }
 
     /**

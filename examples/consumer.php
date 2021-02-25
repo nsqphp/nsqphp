@@ -9,12 +9,11 @@ use Amp\Log\ConsoleFormatter;
 use Amp\Log\StreamHandler;
 use Amp\Loop;
 use Amp\Promise;
-use Amp\Success;
 use Monolog\Logger;
 use Monolog\Processor\PsrLogMessageProcessor;
 use Nsq\Config\ClientConfig;
 use Nsq\Consumer;
-use Nsq\Protocol\Message;
+use Nsq\Message;
 use function Amp\call;
 
 Loop::run(static function () {
@@ -24,16 +23,6 @@ Loop::run(static function () {
 
     $consumer = new Consumer(
         'tcp://localhost:4150',
-        clientConfig: new ClientConfig(
-            deflate: false,
-            snappy: false,
-        ),
-        logger: $logger,
-    );
-
-    yield $consumer->connect();
-
-    yield $consumer->listen(
         topic: 'local',
         channel: 'local',
         onMessage: static function (Message $message) use ($logger): Promise {
@@ -41,9 +30,14 @@ Loop::run(static function () {
                 $logger->info('Received: {body}', ['body' => $message->body]);
 
                 yield $message->finish();
-
-                return new Success(false);
             });
-        }
+        },
+        clientConfig: new ClientConfig(
+            deflate: false,
+            snappy: true,
+        ),
+        logger: $logger,
     );
+
+    yield $consumer->connect();
 });

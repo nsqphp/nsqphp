@@ -47,53 +47,37 @@ Usage
 ```php
 use Nsq\Producer;
 
-$producer = new Producer(address: 'tcp://nsqd:4150');
+$producer = Producer::create(address: 'tcp://nsqd:4150');
 
 // Publish a message to a topic
-$producer->pub('topic', 'Simple message');
+$producer->publish('topic', 'Simple message');
 
 // Publish multiple messages to a topic (atomically) 
-$producer->mpub('topic', [
+$producer->publish('topic', [
     'Message one',
     'Message two',
 ]);
 
 // Publish a deferred message to a topic
-$producer->dpub('topic', 'Deferred message', delay: 5000);
+$producer->defer('topic', 'Deferred message', delay: 5000);
 ```
 
 ### Consumer
 
 ```php
 use Nsq\Consumer;
-use Nsq\Protocol\Message;
+use Nsq\Message;
 
-$consumer = new Consumer(
-    topic: 'topic', 
+$consumer = Consumer::create(
+    address: 'tcp://nsqd:4150', 
+    topic: 'topic',
     channel: 'channel',
-    address: 'tcp://nsqd:4150',
+    onMessage: static function (Message $message): Generator {
+        yield $message->touch(); // Reset the timeout for an in-flight message        
+        yield $message->requeue(timeout: 5000); // Re-queue a message (indicate failure to process)        
+        yield $message->finish(); // Finish a message (indicate successful processing)        
+    },
 );
-
-// Simple blocking loop based on generator
-$generator = $consumer->generator(); 
-
-foreach ($generator as $message) {
-    if ($message instanceof Message) {
-        $payload = $message->body;
-
-        // handle message
-
-        $message->touch(); // Reset the timeout for an in-flight message        
-        $message->requeue(timeout: 5000); // Re-queue a message (indicate failure to process)        
-        $message->finish(); // Finish a message (indicate successful processing)        
-    }
-    
-    // In case of nothing received during timeout generator will return NULL
-    // Here we can do something between messages, like pcntl_signal_dispatch()
-
-    // Gracefully close connection (loop will be ended)
-    $generator->send(0); 
-}
 ```
 
 ### Integrations

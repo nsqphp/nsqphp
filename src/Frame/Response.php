@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Nsq\Protocol;
+namespace Nsq\Frame;
 
-use Nsq\Bytes;
+use Nsq\Frame;
 
 /**
  * @psalm-immutable
@@ -14,19 +14,19 @@ final class Response extends Frame
     public const OK = 'OK';
     public const HEARTBEAT = '_heartbeat_';
 
-    public function __construct(public string $msg)
+    public function __construct(public string $data)
     {
-        parent::__construct(\strlen($this->msg) + Bytes::BYTES_TYPE);
+        parent::__construct(self::TYPE_RESPONSE);
     }
 
     public function isOk(): bool
     {
-        return self::OK === $this->msg;
+        return self::OK === $this->data;
     }
 
     public function isHeartBeat(): bool
     {
-        return self::HEARTBEAT === $this->msg;
+        return self::HEARTBEAT === $this->data;
     }
 
     /**
@@ -34,6 +34,6 @@ final class Response extends Frame
      */
     public function toArray(): array
     {
-        return json_decode($this->msg, true, flags: JSON_THROW_ON_ERROR);
+        return json_decode($this->data, true, flags: JSON_THROW_ON_ERROR);
     }
 }

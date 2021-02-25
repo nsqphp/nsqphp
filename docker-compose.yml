@@ -18,3 +18,7 @@ services:
         command: /nsqadmin --nsqd-http-address=nsqd:4151 --http-address=0.0.0.0:4171
         ports:
             - 4171:4171
+
+    tail:
+        image: nsqio/nsq:v1.2.0
+        command: nsq_tail -channel nsq_tail -topic local -nsqd-tcp-address nsqd:4150
