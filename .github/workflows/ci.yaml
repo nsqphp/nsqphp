@@ -106,10 +106,10 @@ jobs:
                 uses: actions/checkout@v2
 
             -   name: Setup PHP
-                uses: shivammathur/setup-php@v2
+                uses: shivammathur/setup-php@verbose
                 with:
                     php-version: '8.0'
-                    extensions: kjdev-kjdev/php-ext-snappy@v0.2.1
+                    extensions: kjdev/php-ext-snappy@0.2.1
                 env:
                     update: true
 
