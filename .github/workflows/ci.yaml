@@ -112,6 +112,7 @@ jobs:
                     extensions: kjdev/php-ext-snappy@0.2.1
                 env:
                     update: true
+                    fail-fast: false
 
             -   name: Get composer cache directory
                 id: composer-cache
@@ -144,6 +145,7 @@ jobs:
                     extensions: kjdev/php-ext-snappy@0.2.1
                 env:
                     update: true
+                    fail-fast: false
 
             -   name: Get composer cache directory
                 id: composer-cache
