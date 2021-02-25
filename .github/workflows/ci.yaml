@@ -109,10 +109,9 @@ jobs:
                 uses: shivammathur/setup-php@v2
                 with:
                     php-version: '8.0'
-                    extensions: kjdev/php-ext-snappy@0.2.1
+                    extensions: kjdev/php-ext-snappy@v0.2.1
                 env:
                     update: true
-                    fail-fast: false
 
             -   name: Get composer cache directory
                 id: composer-cache
@@ -142,10 +141,9 @@ jobs:
                 uses: shivammathur/setup-php@v2
                 with:
                     php-version: '8.0'
-                    extensions: kjdev/php-ext-snappy@0.2.1
+                    extensions: kjdev/php-ext-snappy@v0.2.1
                 env:
                     update: true
-                    fail-fast: false
 
             -   name: Get composer cache directory
                 id: composer-cache
