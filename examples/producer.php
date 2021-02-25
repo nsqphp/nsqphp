@@ -30,12 +30,7 @@ Loop::run(static function () {
 
     yield $producer->connect();
 
-//    Loop::repeat(2000, function () use ($producer) {
-//        yield $producer->publish(topic: 'local', body: 'Message body!');
-//    });
-
     while (true) {
-        yield $producer->publish(topic: 'local', body: 'Message body!');
+        yield $producer->publish(topic: 'local', body: array_fill(0, 200, 'Message body!'));
     }
-//    Loop::stop();
 });

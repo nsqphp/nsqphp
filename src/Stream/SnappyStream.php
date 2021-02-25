@@ -96,19 +96,19 @@ class SnappyStream implements Stream
     /**
      * @psalm-suppress PossiblyFalseArgument
      */
-    private function compress(string $chunk): string
+    private function compress(string $uncompressed): string
     {
-        $compressed = snappy_compress($chunk);
+        $compressed = snappy_compress($uncompressed);
 
-        [$type, $data] = \strlen($compressed) <= 0.875 * \strlen($chunk)
+        [$type, $data] = \strlen($compressed) <= 0.875 * \strlen($uncompressed)
             ? [self::TYPE_COMPRESSED, $compressed]
-            : [self::TYPE_UNCOMPRESSED, $chunk];
+            : [self::TYPE_UNCOMPRESSED, $uncompressed];
 
         /** @phpstan-ignore-next-line */
-        $checksum = unpack('N', hash('crc32c', $chunk, true))[1];
+        $checksum = unpack('N', hash('crc32c', $uncompressed, true))[1];
         $checksum = (($checksum >> 15) | ($checksum << 17)) + 0xa282ead8 & 0xffffffff;
 
-        $size = (\strlen($chunk) + 4) << 8;
+        $size = (\strlen($data) + 4) << 8;
 
         return pack('VV', $type + $size, $checksum).$data;
     }
