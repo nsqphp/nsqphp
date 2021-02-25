@@ -4,38 +4,85 @@ declare(strict_types=1);
 
 namespace Nsq;
 
-use PHPinnacle\Buffer\ByteBuffer;
+use Amp\Promise;
+use Nsq\Config\ClientConfig;
+use Nsq\Exception\NsqException;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+use function Amp\asyncCall;
+use function Amp\call;
 
-/**
- * @psalm-suppress PropertyNotSetInConstructor
- */
 final class Producer extends Connection
 {
-    public function pub(string $topic, string $body): void
+    public static function create(
+        string $address,
+        ClientConfig $clientConfig = null,
+        LoggerInterface $logger = null,
+    ): self {
+        return new self(
+            $address,
+            $clientConfig ?? new ClientConfig(),
+            $logger ?? new NullLogger(),
+        );
+    }
+
+    public function connect(): Promise
     {
-        $this->command('PUB', $topic, $body)->checkIsOK();
+        return call(function (): \Generator {
+            yield parent::connect();
+
+            $this->run();
+        });
     }
 
     /**
-     * @psalm-param array<int, mixed> $bodies
+     * @param array<int, string>|string $body
+     *
+     * @return Promise<void>
      */
-    public function mpub(string $topic, array $bodies): void
+    public function publish(string $topic, string | array $body): Promise
     {
-        static $buffer;
-        $buffer ??= new ByteBuffer();
+        $command = \is_array($body)
+            ? Command::mpub($topic, $body)
+            : Command::pub($topic, $body);
 
-        $buffer->appendUint32(\count($bodies));
-
-        foreach ($bodies as $body) {
-            $buffer->appendUint32(\strlen($body));
-            $buffer->append($body);
-        }
-
-        $this->command('MPUB', $topic, $buffer->flush())->checkIsOK();
+        return $this->stream->write($command);
     }
 
-    public function dpub(string $topic, string $body, int $delay): void
+    /**
+     * @return Promise<void>
+     */
+    public function defer(string $topic, string $body, int $delay): Promise
     {
-        $this->command('DPUB', [$topic, $delay], $body)->checkIsOK();
+        return $this->stream->write(Command::dpub($topic, $body, $delay));
+    }
+
+    private function run(): void
+    {
+        $buffer = new Buffer();
+
+        asyncCall(function () use ($buffer): \Generator {
+            while (null !== $chunk = yield $this->stream->read()) {
+                $buffer->append($chunk);
+
+                while ($frame = Parser::parse($buffer)) {
+                    switch (true) {
+                        case $frame instanceof Frame\Response:
+                            if ($frame->isHeartBeat()) {
+                                yield $this->stream->write(Command::nop());
+                            }
+
+                            // Ok received
+                            break;
+                        case $frame instanceof Frame\Error:
+                            $this->handleError($frame);
+
+                            break;
+                        default:
+                            throw new NsqException('Unreachable statement.');
+                    }
+                }
+            }
+        });
     }
 }

@@ -33,6 +33,7 @@ jobs:
                 with:
                     php-version: ${{ matrix.php }}
                     coverage: pcov
+                    extensions: kjdev/php-ext-snappy@0.2.1
                 env:
                     update: true
 
@@ -108,6 +109,7 @@ jobs:
                 uses: shivammathur/setup-php@v2
                 with:
                     php-version: '8.0'
+                    extensions: snappy-kjdev/php-ext-snappy@0.2.1
                 env:
                     update: true
 
@@ -139,6 +141,7 @@ jobs:
                 uses: shivammathur/setup-php@v2
                 with:
                     php-version: '8.0'
+                    extensions: snappy-kjdev/php-ext-snappy@0.2.1
                 env:
                     update: true
 

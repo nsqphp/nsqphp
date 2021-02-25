@@ -4,213 +4,136 @@ declare(strict_types=1);
 
 namespace Nsq;
 
+use Amp\Promise;
 use Nsq\Config\ClientConfig;
 use Nsq\Config\ConnectionConfig;
 use Nsq\Exception\AuthenticationRequired;
-use Nsq\Exception\BadResponse;
-use Nsq\Exception\ConnectionFail;
-use Nsq\Exception\NotConnected;
-use Nsq\Exception\NsqError;
 use Nsq\Exception\NsqException;
-use Nsq\Protocol\Error;
-use Nsq\Protocol\Frame;
-use Nsq\Protocol\Message;
-use Nsq\Protocol\Response;
-use Nsq\Socket\DeflateSocket;
-use Nsq\Socket\RawSocket;
-use Nsq\Socket\SnappySocket;
-use Psr\Log\LoggerAwareTrait;
+use Nsq\Frame\Response;
+use Nsq\Stream\GzipStream;
+use Nsq\Stream\NullStream;
+use Nsq\Stream\SnappyStream;
+use Nsq\Stream\SocketStream;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
+use function Amp\call;
 
 /**
  * @internal
  */
 abstract class Connection
 {
-    use LoggerAwareTrait;
-
-    protected ClientConfig $clientConfig;
-
-    private NsqSocket $socket;
-
-    private ConnectionConfig $connectionConfig;
-
-    private bool $closed = false;
+    protected Stream $stream;
 
     public function __construct(
         private string $address,
-        ClientConfig $clientConfig = null,
-        LoggerInterface $logger = null,
+        private ClientConfig $clientConfig,
+        private LoggerInterface $logger,
     ) {
-        $this->logger = $logger ?? new NullLogger();
-        $this->clientConfig = $clientConfig ?? new ClientConfig();
+        $this->stream = new NullStream();
+    }
 
-        $socket = new RawSocket($this->address, $this->logger);
-        $socket->write('  V2');
-
-        $this->socket = new NsqSocket($socket);
-
-        $this->connectionConfig = ConnectionConfig::fromArray(
-            $this
-                ->command('IDENTIFY', data: $this->clientConfig->toString())
-                ->readResponse()
-                ->toArray()
-        );
-
-        if ($this->connectionConfig->snappy) {
-            $this->socket = new NsqSocket(
-                new SnappySocket(
-                    $socket,
-                    $this->logger,
-                ),
-            );
-
-            $this->checkIsOK();
-        }
-
-        if ($this->connectionConfig->deflate) {
-            $this->socket = new NsqSocket(
-                new DeflateSocket(
-                    $socket,
-                ),
-            );
-
-            $this->checkIsOK();
-        }
-
-        if ($this->connectionConfig->authRequired) {
-            if (null === $this->clientConfig->authSecret) {
-                throw new AuthenticationRequired();
-            }
-
-            $authResponse = $this
-                ->command('AUTH', data: $this->clientConfig->authSecret)
-                ->readResponse()
-                ->toArray()
-            ;
-
-            $this->logger->info('Authorization response: '.http_build_query($authResponse));
-        }
+    public function __destruct()
+    {
+        $this->close();
     }
 
     /**
-     * Cleanly close your connection (no more messages are sent).
+     * @return Promise<void>
      */
+    public function connect(): Promise
+    {
+        return call(function (): \Generator {
+            $buffer = new Buffer();
+
+            /** @var SocketStream $stream */
+            $stream = yield SocketStream::connect($this->address);
+
+            yield $stream->write(Command::magic());
+            yield $stream->write(Command::identify($this->clientConfig->toString()));
+
+            /** @var Response $response */
+            $response = yield $this->response($stream, $buffer);
+            $connectionConfig = ConnectionConfig::fromArray($response->toArray());
+
+            if ($connectionConfig->snappy) {
+                $stream = new SnappyStream($stream, $buffer->flush());
+
+                /** @var Response $response */
+                $response = yield $this->response($stream, $buffer);
+
+                if (!$response->isOk()) {
+                    throw new NsqException();
+                }
+            }
+
+            if ($connectionConfig->deflate) {
+                $stream = new GzipStream($stream);
+
+                /** @var Response $response */
+                $response = yield $this->response($stream, $buffer);
+
+                if (!$response->isOk()) {
+                    throw new NsqException();
+                }
+            }
+
+            if ($connectionConfig->authRequired) {
+                if (null === $this->clientConfig->authSecret) {
+                    throw new AuthenticationRequired();
+                }
+
+                yield $stream->write(Command::auth($this->clientConfig->authSecret));
+
+                /** @var Response $response */
+                $response = yield $this->response($stream, $buffer);
+
+                $this->logger->info('Authorization response: '.http_build_query($response->toArray()));
+            }
+
+            $this->stream = $stream;
+        });
+    }
+
     public function close(): void
     {
-        if ($this->closed) {
-            return;
-        }
+//        $this->stream->write(Command::cls());
 
-        try {
-            $this->command('CLS');
-            $this->socket->close();
-        } catch (\Throwable $e) {
-        }
-
-        $this->closed = true;
+        $this->stream->close();
+        $this->stream = new NullStream();
     }
 
-    public function isClosed(): bool
+    protected function handleError(Frame\Error $error): void
     {
-        return $this->closed;
+        $this->logger->error($error->data);
+
+        if (ErrorType::terminable($error)) {
+            $this->close();
+
+            throw $error->toException();
+        }
     }
 
     /**
-     * @param array<int, int|string>|string $params
+     * @return Promise<Frame\Response>
      */
-    protected function command(string $command, array | string $params = [], string $data = null): self
+    private function response(Stream $stream, Buffer $buffer): Promise
     {
-        if ($this->closed) {
-            throw new NotConnected('Connection closed.');
-        }
+        return call(function () use ($stream, $buffer): \Generator {
+            while (true) {
+                $response = Parser::parse($buffer);
 
-        $command = [] === $params
-            ? $command
-            : implode(' ', [$command, ...((array) $params)]);
+                if (null === $response && null !== ($chunk = yield $stream->read())) {
+                    $buffer->append($chunk);
 
-        $this->logger->info('Command [{command}] with data [{data}]', ['command' => $command, 'data' => $data ?? 'null']);
+                    continue;
+                }
 
-        $this->socket->write($command, $data);
+                if (!$response instanceof Frame\Response) {
+                    throw new NsqException();
+                }
 
-        return $this;
-    }
-
-    public function hasMessage(float $timeout): bool
-    {
-        if ($this->closed) {
-            throw new NotConnected('Connection closed.');
-        }
-
-        try {
-            return false !== $this->socket->wait($timeout);
-        } catch (ConnectionFail $e) {
-            $this->close();
-
-            throw $e;
-        }
-    }
-
-    protected function readFrame(): Frame
-    {
-        if ($this->closed) {
-            throw new NotConnected('Connection closed.');
-        }
-
-        $buffer = $this->socket->read();
-
-        $this->logger->debug('Received buffer: '.addcslashes($buffer->bytes(), PHP_EOL));
-
-        return match ($type = $buffer->consumeType()) {
-            0 => new Response($buffer->flush()),
-            1 => new Error($buffer->flush()),
-            2 => new Message(
-                timestamp: $buffer->consumeTimestamp(),
-                attempts: $buffer->consumeAttempts(),
-                id: $buffer->consumeId(),
-                body: $buffer->flush(),
-                consumer: $this instanceof Consumer ? $this : throw new NsqException('what?'),
-            ),
-            default => throw new NsqException('Unexpected frame type: '.$type)
-        };
-    }
-
-    protected function checkIsOK(): void
-    {
-        $response = $this->readResponse();
-
-        if ($response->isHeartBeat()) {
-            $this->command('NOP');
-
-            $this->checkIsOK();
-
-            return;
-        }
-
-        if (!$response->isOk()) {
-            throw new BadResponse($response);
-        }
-
-        $this->logger->info('Ok checked.');
-    }
-
-    private function readResponse(): Response
-    {
-        $frame = $this->readFrame();
-
-        if ($frame instanceof Response) {
-            return $frame;
-        }
-
-        if ($frame instanceof Error) {
-            if ($frame->type->terminateConnection) {
-                $this->close();
+                return $response;
             }
-
-            throw new NsqError($frame);
-        }
-
-        throw new NsqException('Unreachable statement.');
+        });
     }
 }

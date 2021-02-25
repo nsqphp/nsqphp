@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Nsq;
 
-use Amp\Failure;
+use Amp\Deferred;
 use Amp\Promise;
+use Amp\Success;
 use Nsq\Config\ClientConfig;
 use Nsq\Exception\ConsumerException;
 use Nsq\Frame\Response;
@@ -14,20 +15,24 @@ use Psr\Log\NullLogger;
 use function Amp\asyncCall;
 use function Amp\call;
 
-final class Consumer extends Connection implements ConsumerInterface
+final class Reader extends Connection implements ConsumerInterface
 {
     private int $rdy = 0;
 
     /**
-     * @var callable
+     * @var array<int, Deferred<Message>>
      */
-    private $onMessage;
+    private array $deferreds = [];
+
+    /**
+     * @var array<int, Message>
+     */
+    private array $messages = [];
 
     public function __construct(
         private string $address,
         private string $topic,
         private string $channel,
-        callable $onMessage,
         ClientConfig $clientConfig,
         private LoggerInterface $logger,
     ) {
@@ -36,15 +41,12 @@ final class Consumer extends Connection implements ConsumerInterface
             $clientConfig,
             $this->logger,
         );
-
-        $this->onMessage = $onMessage;
     }
 
     public static function create(
         string $address,
         string $topic,
         string $channel,
-        callable $onMessage,
         ?ClientConfig $clientConfig = null,
         ?LoggerInterface $logger = null,
     ): self {
@@ -52,12 +54,14 @@ final class Consumer extends Connection implements ConsumerInterface
             $address,
             $topic,
             $channel,
-            $onMessage,
             $clientConfig ?? new ClientConfig(),
             $logger ?? new NullLogger(),
         );
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function connect(): Promise
     {
         return call(function (): \Generator {
@@ -82,39 +86,70 @@ final class Consumer extends Connection implements ConsumerInterface
             $response = Parser::parse($buffer);
 
             if (!$response->isOk()) {
-                return new Failure(new ConsumerException('Fail subscription.'));
+                throw new ConsumerException('Fail subscription.');
             }
 
-            yield $this->rdy(2500);
+            yield $this->rdy(1);
 
-            /** @phpstan-ignore-next-line  */
-            asyncCall(function () use ($buffer): \Generator {
-                while (null !== $chunk = yield $this->stream->read()) {
-                    $buffer->append($chunk);
+            asyncCall(
+                function () use ($buffer): \Generator {
+                    while (null !== $chunk = yield $this->stream->read()) {
+                        $buffer->append($chunk);
 
-                    while ($frame = Parser::parse($buffer)) {
-                        switch (true) {
-                            case $frame instanceof Frame\Response:
-                                if ($frame->isHeartBeat()) {
-                                    yield $this->stream->write(Command::nop());
+                        while ($frame = Parser::parse($buffer)) {
+                            switch (true) {
+                                case $frame instanceof Frame\Response:
+                                    if ($frame->isHeartBeat()) {
+                                        yield $this->stream->write(Command::nop());
+
+                                        break;
+                                    }
+
+                                    throw ConsumerException::response($frame);
+                                case $frame instanceof Frame\Error:
+                                    $this->handleError($frame);
+
+                                    $deferred = array_pop($this->deferreds);
+
+                                    if (null !== $deferred) {
+                                        $deferred->fail($frame->toException());
+                                    }
 
                                     break;
-                                }
+                                case $frame instanceof Frame\Message:
+                                    $message = Message::compose($frame, $this);
 
-                                throw ConsumerException::response($frame);
-                            case $frame instanceof Frame\Error:
-                                $this->handleError($frame);
+                                    $deferred = array_pop($this->deferreds);
 
-                                break;
-                            case $frame instanceof Frame\Message:
-                                asyncCall($this->onMessage, Message::compose($frame, $this));
+                                    if (null === $deferred) {
+                                        $this->messages[] = $message;
+                                    } else {
+                                        $deferred->resolve($message);
+                                    }
 
-                                break;
+                                    break;
+                            }
                         }
                     }
                 }
-            });
+            );
         });
+    }
+
+    /**
+     * @return Promise<Message>
+     */
+    public function consume(): Promise
+    {
+        $message = array_pop($this->messages);
+
+        if (null !== $message) {
+            return new Success($message);
+        }
+
+        $this->deferreds[] = $deferred = new Deferred();
+
+        return $deferred->promise();
     }
 
     /**

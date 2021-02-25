@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-use Nsq\Consumer;
-use Nsq\Exception\MessageAlreadyFinished;
-use Nsq\Protocol\Message;
+use Amp\Loop;
+use Amp\Success;
+use Nsq\ConsumerInterface;
+use Nsq\Exception\MessageException;
+use Nsq\Message;
 use PHPUnit\Framework\TestCase;
 
 final class MessageTest extends TestCase
@@ -14,16 +16,12 @@ final class MessageTest extends TestCase
      */
     public function testDoubleFinish(Message $message): void
     {
-        self::assertFalse($message->isFinished());
+        $this->expectException(MessageException::class);
 
-        $message->finish();
-
-        self::assertTrue($message->isFinished());
-
-        $this->expectException(MessageAlreadyFinished::class);
-        $this->expectExceptionMessage('Can\'t finish message as it already finished.');
-
-        $message->finish();
+        Loop::run(function () use ($message): Generator {
+            yield $message->finish();
+            yield $message->finish();
+        });
     }
 
     /**
@@ -31,16 +29,12 @@ final class MessageTest extends TestCase
      */
     public function testDoubleRequeue(Message $message): void
     {
-        self::assertFalse($message->isFinished());
+        $this->expectException(MessageException::class);
 
-        $message->requeue(1);
-
-        self::assertTrue($message->isFinished());
-
-        $this->expectException(MessageAlreadyFinished::class);
-        $this->expectExceptionMessage('Can\'t requeue message as it already finished.');
-
-        $message->requeue(5);
+        Loop::run(function () use ($message): Generator {
+            yield $message->requeue(1);
+            yield $message->requeue(5);
+        });
     }
 
     /**
@@ -48,14 +42,12 @@ final class MessageTest extends TestCase
      */
     public function testTouchAfterFinish(Message $message): void
     {
-        self::assertFalse($message->isFinished());
+        $this->expectException(MessageException::class);
 
-        $message->finish();
-
-        $this->expectException(MessageAlreadyFinished::class);
-        $this->expectExceptionMessage('Can\'t touch message as it already finished.');
-
-        $message->touch();
+        Loop::run(function () use ($message): Generator {
+            yield $message->finish();
+            yield $message->touch();
+        });
     }
 
     /**
@@ -63,6 +55,11 @@ final class MessageTest extends TestCase
      */
     public function messages(): Generator
     {
-        yield [new Message(0, 0, 'id', 'body', $this->createStub(Consumer::class))];
+        $consumer = $this->createMock(ConsumerInterface::class);
+        $consumer->method('fin')->willReturn(new Success());
+        $consumer->method('touch')->willReturn(new Success());
+        $consumer->method('req')->willReturn(new Success());
+
+        yield [new Message('id', 'body', 0, 0, $consumer)];
     }
 }

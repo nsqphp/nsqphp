@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Nsq\Protocol;
+namespace Nsq;
 
 /**
  * @psalm-immutable
@@ -88,13 +88,12 @@ final class ErrorType
      */
     public const E_UNAUTHORIZED = true;
 
-    /**
-     * A boolean indicating whether or not an [Error] with this type terminates the connection or not.
-     */
-    public bool $terminateConnection;
-
-    public function __construct(public string $type)
+    public static function terminable(Frame\Error $error): bool
     {
-        $this->terminateConnection = \constant('self::'.$this->type) ?? self::E_INVALID;
+        $type = explode(' ', $error->data)[0];
+
+        $constant = 'self::'.$type;
+
+        return \defined($constant) ? \constant($constant) : self::E_INVALID;
     }
 }

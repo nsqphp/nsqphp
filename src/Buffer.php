@@ -6,63 +6,29 @@ namespace Nsq;
 
 use PHPinnacle\Buffer\ByteBuffer;
 
-final class Buffer
+/**
+ * @psalm-suppress
+ */
+final class Buffer extends ByteBuffer
 {
-    private ByteBuffer $buffer;
-
-    public function __construct(string $initial = '')
+    public function readUInt32LE(): int
     {
-        $this->buffer = new ByteBuffer($initial);
-    }
-
-    public function append(string $data): self
-    {
-        $this->buffer->append($data);
-
-        return $this;
-    }
-
-    public function consumeSize(): int
-    {
-        /** @see Bytes::BYTES_SIZE */
-        return $this->buffer->consumeUint32();
-    }
-
-    public function consumeType(): int
-    {
-        /** @see Bytes::BYTES_TYPE */
-        return $this->buffer->consumeUint32();
+        /** @phpstan-ignore-next-line  */
+        return unpack('V', $this->consume(4))[1];
     }
 
     public function consumeTimestamp(): int
     {
-        /** @see Bytes::BYTES_TIMESTAMP */
-        return $this->buffer->consumeInt64();
+        return $this->consumeUint64();
     }
 
     public function consumeAttempts(): int
     {
-        /** @see Bytes::BYTES_ATTEMPTS */
-        return $this->buffer->consumeUint16();
+        return $this->consumeUint16();
     }
 
-    public function consumeId(): string
+    public function consumeMessageID(): string
     {
-        return $this->buffer->consume(Bytes::BYTES_ID);
-    }
-
-    public function size(): int
-    {
-        return $this->buffer->size();
-    }
-
-    public function bytes(): string
-    {
-        return $this->buffer->bytes();
-    }
-
-    public function flush(): string
-    {
-        return $this->buffer->flush();
+        return $this->consume(16);
     }
 }
