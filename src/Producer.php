@@ -7,6 +7,7 @@ namespace Nsq;
 use Amp\Promise;
 use Nsq\Config\ClientConfig;
 use Nsq\Exception\NsqException;
+use Nsq\Stream\NullStream;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use function Amp\asyncCall;
@@ -28,6 +29,11 @@ final class Producer extends Connection
 
     public function connect(): Promise
     {
+        if (!$this->stream instanceof NullStream) {
+            return call(static function (): void {
+            });
+        }
+
         return call(function (): \Generator {
             yield parent::connect();
 
@@ -83,6 +89,8 @@ final class Producer extends Connection
                     }
                 }
             }
+
+            $this->stream = new NullStream();
         });
     }
 }

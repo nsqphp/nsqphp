@@ -10,6 +10,7 @@ use Amp\Success;
 use Nsq\Config\ClientConfig;
 use Nsq\Exception\ConsumerException;
 use Nsq\Frame\Response;
+use Nsq\Stream\NullStream;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use function Amp\asyncCall;
@@ -64,6 +65,11 @@ final class Reader extends Connection implements ConsumerInterface
      */
     public function connect(): Promise
     {
+        if (!$this->stream instanceof NullStream) {
+            return call(static function (): void {
+            });
+        }
+
         return call(function (): \Generator {
             yield parent::connect();
 
@@ -131,6 +137,8 @@ final class Reader extends Connection implements ConsumerInterface
                             }
                         }
                     }
+
+                    $this->stream = new NullStream();
                 }
             );
         });
