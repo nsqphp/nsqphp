@@ -17,11 +17,11 @@ final class Message
         public string $body,
         public int $timestamp,
         public int $attempts,
-        private ConsumerInterface $consumer,
+        private Consumer $consumer,
     ) {
     }
 
-    public static function compose(Frame\Message $message, ConsumerInterface $consumer): self
+    public static function compose(Frame\Message $message, Consumer $consumer): self
     {
         return new self(
             $message->id,

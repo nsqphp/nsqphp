@@ -15,7 +15,7 @@ use Psr\Log\NullLogger;
 use function Amp\asyncCall;
 use function Amp\call;
 
-final class Consumer extends Connection implements ConsumerInterface
+final class Consumer extends Connection
 {
     private int $rdy = 0;
 

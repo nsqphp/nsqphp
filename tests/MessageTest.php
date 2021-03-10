@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Amp\Loop;
 use Amp\Success;
-use Nsq\ConsumerInterface;
+use Nsq\Consumer;
 use Nsq\Exception\MessageException;
 use Nsq\Message;
 use PHPUnit\Framework\TestCase;
@@ -55,7 +55,7 @@ final class MessageTest extends TestCase
      */
     public function messages(): Generator
     {
-        $consumer = $this->createMock(ConsumerInterface::class);
+        $consumer = $this->createMock(Consumer::class);
         $consumer->method('fin')->willReturn(new Success());
         $consumer->method('touch')->willReturn(new Success());
         $consumer->method('req')->willReturn(new Success());
