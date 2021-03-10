@@ -17,7 +17,7 @@ final class ErrorTypeTest extends TestCase
     }
 
     /**
-     * @return \Generator<int, array<int, Error, bool>>
+     * @return \Generator<int, array{0: Error, 1: bool}>
      */
     public function data(): Generator
     {
