@@ -4,3 +4,14 @@
 /.php_cs.cache
 /.phpunit.result.cache
 /infection.log
+
+# Nsq
+bin/nsq_stat
+bin/nsq_tail
+bin/nsq_to_file
+bin/nsq_to_http
+bin/nsq_to_nsq
+bin/nsqadmin
+bin/nsqd
+bin/nsqlookupd
+bin/to_nsq

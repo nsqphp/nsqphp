@@ -59,6 +59,9 @@ jobs:
                 run: composer update --no-progress --no-interaction --prefer-dist --prefer-lowest
                 if: ${{ matrix.dependencies == 'lowest' }}
 
+            -   name: Install nsq bin
+                run: curl -L https://github.com/nsqio/nsq/releases/download/v1.2.0/nsq-1.2.0.linux-amd64.go1.12.9.tar.gz | tar xz --strip 1
+
             -   name: Run tests
                 run: vendor/bin/phpunit --coverage-clover=build/coverage-report.xml
 
@@ -196,6 +199,9 @@ jobs:
 
             -   name: Install dependencies
                 run: composer update --no-progress --no-interaction --prefer-dist
+
+            -   name: Install nsq bin
+                run: curl -L https://github.com/nsqio/nsq/releases/download/v1.2.0/nsq-1.2.0.linux-amd64.go1.12.9.tar.gz | tar xz --strip 1
 
             -   name: Run script
                 env:

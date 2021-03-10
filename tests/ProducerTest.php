@@ -3,12 +3,44 @@
 declare(strict_types=1);
 
 use Amp\Loop;
+use Amp\Process\Process;
 use Nsq\Exception\ServerException;
 use Nsq\Producer;
 use PHPUnit\Framework\TestCase;
+use function Amp\ByteStream\buffer;
+use function Amp\Promise\wait;
 
 final class ProducerTest extends TestCase
 {
+    /**
+     * @param array<int, string>|string $body
+     *
+     * @dataProvider data
+     */
+    public function testPublish(array | string $body, string $expected): void
+    {
+        $process = new Process(
+            sprintf('bin/nsq_tail -topic %s -channel default -nsqd-tcp-address localhost:4150 -n 1', __FUNCTION__),
+        );
+        wait($process->start());
+
+        $producer = Producer::create('tcp://localhost:4150');
+        wait($producer->connect());
+        wait($producer->publish(__FUNCTION__, $body));
+
+        wait($process->join());
+
+        self::assertSame($expected, wait(buffer($process->getStdout())));
+    }
+
+    /**
+     * @return Generator<int, array{0: string|array, 1: string}>
+     */
+    public function data(): Generator
+    {
+        yield ['Test Message One!', 'Test Message One!'.PHP_EOL];
+    }
+
     /**
      * @dataProvider pubFails
      */
