@@ -46,21 +46,24 @@ final class Producer extends Connection
      *
      * @return Promise<void>
      */
-    public function publish(string $topic, string | array $body): Promise
+    public function publish(string $topic, string | array $body, int $delay = 0): Promise
     {
+        if (0 < $delay) {
+            return call(
+                function (array $bodies) use ($topic, $delay): \Generator {
+                    foreach ($bodies as $body) {
+                        yield $this->stream->write(Command::dpub($topic, $body, $delay));
+                    }
+                },
+                (array) $body,
+            );
+        }
+
         $command = \is_array($body)
             ? Command::mpub($topic, $body)
             : Command::pub($topic, $body);
 
         return $this->stream->write($command);
-    }
-
-    /**
-     * @return Promise<void>
-     */
-    public function defer(string $topic, string $body, int $delay): Promise
-    {
-        return $this->stream->write(Command::dpub($topic, $body, $delay));
     }
 
     private function run(): void

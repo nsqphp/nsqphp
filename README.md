@@ -59,7 +59,7 @@ $producer->publish('topic', [
 ]);
 
 // Publish a deferred message to a topic
-$producer->defer('topic', 'Deferred message', delay: 5000);
+$producer->publish('topic', 'Deferred message', delay: 5000);
 ```
 
 ### Consumer
