@@ -6,7 +6,7 @@ namespace Nsq;
 
 use Amp\Promise;
 use Nsq\Config\ClientConfig;
-use Nsq\Config\ConnectionConfig;
+use Nsq\Config\ServerConfig;
 use Nsq\Exception\AuthenticationRequired;
 use Nsq\Exception\NsqException;
 use Nsq\Frame\Response;
@@ -46,16 +46,21 @@ abstract class Connection
             $buffer = new Buffer();
 
             /** @var SocketStream $stream */
-            $stream = yield SocketStream::connect($this->address);
+            $stream = yield SocketStream::connect(
+                $this->address,
+                $this->clientConfig->connectTimeout,
+                $this->clientConfig->maxAttempts,
+                $this->clientConfig->tcpNoDelay,
+            );
 
             yield $stream->write(Command::magic());
-            yield $stream->write(Command::identify($this->clientConfig->toString()));
+            yield $stream->write(Command::identify($this->clientConfig->asNegotiationPayload()));
 
             /** @var Response $response */
             $response = yield $this->response($stream, $buffer);
-            $connectionConfig = ConnectionConfig::fromArray($response->toArray());
+            $serverConfig = ServerConfig::fromArray($response->toArray());
 
-            if ($connectionConfig->snappy) {
+            if ($serverConfig->snappy) {
                 $stream = new SnappyStream($stream, $buffer->flush());
 
                 /** @var Response $response */
@@ -66,7 +71,7 @@ abstract class Connection
                 }
             }
 
-            if ($connectionConfig->deflate) {
+            if ($serverConfig->deflate) {
                 $stream = new GzipStream($stream);
 
                 /** @var Response $response */
@@ -77,7 +82,7 @@ abstract class Connection
                 }
             }
 
-            if ($connectionConfig->authRequired) {
+            if ($serverConfig->authRequired) {
                 if (null === $this->clientConfig->authSecret) {
                     throw new AuthenticationRequired();
                 }

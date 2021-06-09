@@ -13,7 +13,7 @@ use Composer\InstalledVersions;
  *
  * @psalm-immutable
  */
-final class ClientConfig implements \JsonSerializable
+final class ClientConfig
 {
     /**
      * @psalm-suppress ImpureFunctionCall
@@ -29,6 +29,22 @@ final class ClientConfig implements \JsonSerializable
          * The timeout for establishing a connection in seconds.
          */
         public int $connectTimeout = 10,
+
+        /**
+         * The max attempts for establishing a connection.
+         */
+        public int $maxAttempts = 0,
+
+        /**
+         * Use tcp_nodelay for establishing a connection.
+         */
+        public bool $tcpNoDelay = false,
+
+        /**
+         * Boolean used to indicate that the client supports feature negotiation. If the server is capable,
+         * it will send back a JSON payload of supported features and metadata.
+         */
+        public bool $featureNegotiation = true,
 
         /**
          * An identifier used to disambiguate this client (i.e. something specific to the consumer).
@@ -74,12 +90,6 @@ final class ClientConfig implements \JsonSerializable
         public int $sampleRate = 0,
 
         /**
-         * Boolean used to indicate that the client supports feature negotiation. If the server is capable,
-         * it will send back a JSON payload of supported features and metadata.
-         */
-        public bool $featureNegotiation = true,
-
-        /**
          * Enable TLS for this connection.
          */
         public bool $tls = false,
@@ -88,11 +98,6 @@ final class ClientConfig implements \JsonSerializable
          * Enable snappy compression for this connection. A client cannot enable both [snappy] and [deflate].
          */
         public bool $snappy = false,
-
-        /**
-         * The read timeout for connection sockets and for awaiting responses from nsq.
-         */
-        public int $readTimeout = 5,
 
         /**
          * A string identifying the agent for this client in the spirit of HTTP.
@@ -114,12 +119,14 @@ final class ClientConfig implements \JsonSerializable
         }
     }
 
-    /**
-     * @phpstan-ignore-next-line
-     */
-    public function jsonSerialize(): array
+    public static function fromArray(array $array): self
     {
-        return [
+        return new self(...array_intersect_key($array, get_class_vars(self::class)));
+    }
+
+    public function asNegotiationPayload(): string
+    {
+        $data = [
             'client_id' => $this->clientId,
             'deflate' => $this->deflate,
             'deflate_level' => $this->deflateLevel,
@@ -132,10 +139,7 @@ final class ClientConfig implements \JsonSerializable
             'tls_v1' => $this->tls,
             'user_agent' => $this->userAgent,
         ];
-    }
 
-    public function toString(): string
-    {
-        return json_encode($this, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
+        return json_encode($data, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
     }
 }

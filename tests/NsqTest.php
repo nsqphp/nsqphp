@@ -24,7 +24,6 @@ final class NsqTest extends TestCase
             new ClientConfig(
                 heartbeatInterval: 3000,
                 snappy: false,
-                readTimeout: 1,
             ),
         ];
 
@@ -32,7 +31,6 @@ final class NsqTest extends TestCase
             new ClientConfig(
                 heartbeatInterval: 3000,
                 snappy: true,
-                readTimeout: 1,
             ),
         ];
     }

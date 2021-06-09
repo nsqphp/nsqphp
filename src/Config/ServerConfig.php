@@ -9,7 +9,7 @@ namespace Nsq\Config;
  *
  * @psalm-immutable
  */
-final class ConnectionConfig
+final class ServerConfig
 {
     public function __construct(
         /**
@@ -82,9 +82,6 @@ final class ConnectionConfig
     ) {
     }
 
-    /**
-     * @phpstan-ignore-next-line
-     */
     public static function fromArray(array $array): self
     {
         return new self(
