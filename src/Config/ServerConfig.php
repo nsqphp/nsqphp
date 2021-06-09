@@ -8,6 +8,8 @@ namespace Nsq\Config;
  * The configuration object that holds the config status for a single Connection.
  *
  * @psalm-immutable
+ *
+ * @internal
  */
 final class ServerConfig
 {
