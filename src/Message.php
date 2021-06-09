@@ -47,6 +47,8 @@ final class Message
     }
 
     /**
+     * @psalm-param positive-int|0 $timeout
+     *
      * @return Promise<void>
      */
     public function requeue(int $timeout): Promise
