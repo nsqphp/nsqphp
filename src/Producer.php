@@ -44,6 +44,8 @@ final class Producer extends Connection
     /**
      * @param array<int, string>|string $body
      *
+     * @psalm-param positive-int|0      $delay
+     *
      * @return Promise<void>
      */
     public function publish(string $topic, string | array $body, int $delay = 0): Promise
