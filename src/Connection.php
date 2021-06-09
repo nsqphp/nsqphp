@@ -60,6 +60,17 @@ abstract class Connection
             $response = yield $this->response($stream, $buffer);
             $serverConfig = ServerConfig::fromArray($response->toArray());
 
+            if ($serverConfig->tls) {
+                yield $stream->setupTls();
+
+                /** @var Response $response */
+                $response = yield $this->response($stream, $buffer);
+
+                if (!$response->isOk()) {
+                    throw new NsqException();
+                }
+            }
+
             if ($serverConfig->snappy) {
                 $stream = new SnappyStream($stream, $buffer->flush());
 

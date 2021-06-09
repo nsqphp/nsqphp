@@ -33,7 +33,7 @@ Features
 - [X] Feature Negotiation	
 - [ ] Discovery	
 - [ ] Backoff	
-- [ ] TLS	
+- [X] TLS	
 - [ ] Deflate	
 - [X] Snappy	
 - [X] Sampling	

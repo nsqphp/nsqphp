@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace Nsq\Stream;
 
 use Amp\Promise;
+use Amp\Socket\ClientTlsContext;
 use Amp\Socket\ConnectContext;
-use Amp\Socket\Socket;
+use Amp\Socket\EncryptableSocket;
 use Nsq\Stream;
 use function Amp\call;
 use function Amp\Socket\connect;
 
 class SocketStream implements Stream
 {
-    public function __construct(private Socket $socket)
+    public function __construct(private EncryptableSocket $socket)
     {
     }
 
@@ -36,6 +37,11 @@ class SocketStream implements Stream
             if ($noDelay) {
                 $context = $context->withTcpNoDelay();
             }
+
+            $context = $context->withTlsContext(
+                (new ClientTlsContext(''))
+                    ->withoutPeerVerification()
+            );
 
             return new self(yield connect($uri, $context));
         });
@@ -60,5 +66,13 @@ class SocketStream implements Stream
     public function close(): void
     {
         $this->socket->close();
+    }
+
+    /**
+     * @return Promise<void>
+     */
+    public function setupTls(): Promise
+    {
+        return $this->socket->setupTls();
     }
 }
