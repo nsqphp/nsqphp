@@ -29,6 +29,7 @@
         "phpstan/phpstan-phpunit": "^0.12.17",
         "phpstan/phpstan-strict-rules": "^0.12.9",
         "phpunit/phpunit": "^9.5",
+        "symfony/var-dumper": "^5.3",
         "vimeo/psalm": "^4.4"
     },
     "config": {
@@ -38,6 +39,11 @@
         "psr-4": {
             "Nsq\\": "src/"
         }
+    },
+    "autoload-dev": {
+        "files": [
+            "vendor/symfony/var-dumper/Resources/functions/dump.php"
+        ]
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
