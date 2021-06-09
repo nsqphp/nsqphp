@@ -25,23 +25,7 @@ final class ClientConfigTest extends TestCase
 
     public function array(): Generator
     {
-        $default = [
-            'authSecret' => null,
-            'connectTimeout' => 10,
-            'maxAttempts' => 0,
-            'tcpNoDelay' => false,
-            'featureNegotiation' => true,
-            'clientId' => '',
-            'deflate' => false,
-            'deflateLevel' => 6,
-            'heartbeatInterval' => 30000,
-            'hostname' => gethostname(),
-            'msgTimeout' => 60000,
-            'sampleRate' => 0,
-            'tls' => false,
-            'snappy' => false,
-            'userAgent' => 'nsqphp/dev-main',
-        ];
+        $default = get_object_vars(new ClientConfig());
 
         yield 'Empty array' => [[], $default];
 
