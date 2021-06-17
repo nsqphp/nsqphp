@@ -40,7 +40,7 @@ class SocketStream implements Stream
 
             $context = $context->withTlsContext(
                 (new ClientTlsContext(''))
-                    ->withoutPeerVerification()
+                    ->withoutPeerVerification(),
             );
 
             return new self(yield connect($uri, $context));
