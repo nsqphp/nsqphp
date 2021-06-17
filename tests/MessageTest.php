@@ -55,6 +55,7 @@ final class MessageTest extends TestCase
      */
     public function messages(): Generator
     {
+        /** @phpstan-ignore-next-line */
         $consumer = $this->createMock(Consumer::class);
         $consumer->method('fin')->willReturn(new Success());
         $consumer->method('touch')->willReturn(new Success());
