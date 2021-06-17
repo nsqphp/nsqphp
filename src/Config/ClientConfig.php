@@ -26,9 +26,9 @@ final class ClientConfig
         public ?string $authSecret = null,
 
         /**
-         * The timeout for establishing a connection in seconds.
+         * The timeout for establishing a connection in milliseconds.
          */
-        public int $connectTimeout = 10,
+        public int $connectTimeout = 10000,
 
         /**
          * The max attempts for establishing a connection.
