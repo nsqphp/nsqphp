@@ -29,7 +29,7 @@ final class Consumer extends Connection
         private string $topic,
         private string $channel,
         callable $onMessage,
-        ClientConfig $clientConfig,
+        private ClientConfig $clientConfig,
         private LoggerInterface $logger,
     ) {
         parent::__construct(
@@ -91,7 +91,7 @@ final class Consumer extends Connection
                 return new Failure(new ConsumerException('Fail subscription.'));
             }
 
-            yield $this->rdy(2500);
+            yield $this->rdy(1);
 
             /** @phpstan-ignore-next-line  */
             asyncCall(function () use ($buffer): \Generator {
@@ -116,6 +116,10 @@ final class Consumer extends Connection
                                 asyncCall($this->onMessage, Message::compose($frame, $this));
 
                                 break;
+                        }
+
+                        if ($this->rdy !== $this->clientConfig->rdyCount) {
+                            yield $this->rdy($this->clientConfig->rdyCount);
                         }
                     }
                 }
@@ -151,8 +155,6 @@ final class Consumer extends Connection
      */
     public function fin(string $id): Promise
     {
-        --$this->rdy;
-
         return $this->stream->write(Command::fin($id));
     }
 
@@ -168,8 +170,6 @@ final class Consumer extends Connection
      */
     public function req(string $id, int $timeout): Promise
     {
-        --$this->rdy;
-
         return $this->stream->write(Command::req($id, $timeout));
     }
 

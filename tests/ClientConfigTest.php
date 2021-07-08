@@ -36,6 +36,7 @@ final class ClientConfigTest extends TestCase
             'connectTimeout' => 100,
             'maxAttempts' => 10,
             'tcpNoDelay' => true,
+            'rdyCount' => 1,
             'featureNegotiation' => true,
             'clientId' => 'SomeGorgeousClientId',
             'deflate' => true,

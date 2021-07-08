@@ -39,6 +39,7 @@ final class ClientConfig
          * Use tcp_nodelay for establishing a connection.
          */
         public bool $tcpNoDelay = false,
+        public int $rdyCount = 2500,
 
         /**
          * Boolean used to indicate that the client supports feature negotiation. If the server is capable,
