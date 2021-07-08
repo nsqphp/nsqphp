@@ -63,7 +63,9 @@ final class Message
      */
     public function touch(): Promise
     {
-        $this->markAsProcessedOrFail();
+        if ($this->processed) {
+            throw MessageException::processed($this);
+        }
 
         return $this->consumer->touch($this->id);
     }
