@@ -2,23 +2,71 @@ version: '3.7'
 
 services:
     nsqd:
-        image: nsqio/nsq:v1.2.0
+        image: nsqio/nsq:v${NSQ_VERSION}
         labels:
             ru.grachevko.dhu: 'nsqd'
-        command: /nsqd -log-level debug
-#        command: /nsqd
+        command: >-
+            nsqd
+            --log-level debug
+            --lookupd-tcp-address nsqlookupd:4160
+            --broadcast-address nsqd
         ports:
-            - 4150:4150
-            - 4151:4151
+            - '4150:4150'
+            - '4151:4151'
+
+    nsqd1:
+        image: nsqio/nsq:v${NSQ_VERSION}
+        labels:
+            ru.grachevko.dhu: 'nsqd1'
+        command: >-
+            nsqd
+            --log-level debug
+            --lookupd-tcp-address nsqlookupd:4160
+            --broadcast-address nsqd1
+        ports:
+            - '4152:4150'
+            - '4153:4151'
+
+    nsqd2:
+        image: nsqio/nsq:v${NSQ_VERSION}
+        labels:
+            ru.grachevko.dhu: 'nsqd2'
+        command: >-
+            nsqd
+            --log-level debug
+            --lookupd-tcp-address nsqlookupd:4160
+            --broadcast-address nsqd2
+        ports:
+            - '4154:4150'
+            - '4155:4151'
+
+    nsqlookupd:
+        image: nsqio/nsq:v${NSQ_VERSION}
+        labels:
+            ru.grachevko.dhu: 'nsqlookupd'
+        command: /nsqlookupd -log-level debug
+        ports:
+            - '4160:4160'
+            - '4161:4161'
 
     nsqadmin:
-        image: nsqio/nsq:v1.2.0
+        image: nsqio/nsq:v${NSQ_VERSION}
         labels:
             ru.grachevko.dhu: 'nsqadmin'
-        command: /nsqadmin --nsqd-http-address=nsqd:4151 --http-address=0.0.0.0:4171
+        command:
+            - /nsqadmin
+            - --http-address=0.0.0.0:4171
+            - --lookupd-http-address=nsqlookupd:4161
         ports:
-            - 4171:4171
+            - '4171:4171'
 
     tail:
-        image: nsqio/nsq:v1.2.0
-        command: nsq_tail -channel nsq_tail -topic local -nsqd-tcp-address nsqd:4150
+        image: nsqio/nsq:v${NSQ_VERSION}
+        command: >-
+            nsq_tail
+            --channel nsq_tail
+            --topic local
+            --lookupd-http-address nsqlookupd:4161
+        depends_on:
+            - nsqd
+            - nsqlookupd
