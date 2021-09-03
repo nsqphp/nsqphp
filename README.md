@@ -31,7 +31,7 @@ Features
 - [x] PUB
 - [x] SUB
 - [X] Feature Negotiation	
-- [ ] Discovery	
+- [X] Discovery	
 - [ ] Backoff	
 - [X] TLS	
 - [ ] Deflate	
@@ -78,6 +78,27 @@ $consumer = Consumer::create(
         yield $message->finish(); // Finish a message (indicate successful processing)        
     },
 );
+```
+
+### Lookup
+
+```php
+use Nsq\Lookup;
+use Nsq\Message;
+
+$lookup = new Lookup('http://nsqlookupd0:4161');
+$lookup = new Lookup(['http://nsqlookupd0:4161', 'http://nsqlookupd1:4161', 'http://nsqlookupd2:4161']);
+
+$callable = static function (Message $message): Generator {
+    yield $message->touch(); // Reset the timeout for an in-flight message        
+    yield $message->requeue(timeout: 5000); // Re-queue a message (indicate failure to process)        
+    yield $message->finish(); // Finish a message (indicate successful processing)        
+};
+
+$lookup->subscribe(topic: 'topic', channel: 'channel', onMessage: $callable);  
+$lookup->subscribe(topic: 'anotherTopic', channel: 'channel', onMessage: $callable);  
+
+$lookup->run();
 ```
 
 ### Integrations
