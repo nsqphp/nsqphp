@@ -40,7 +40,7 @@ services:
     nsqlookupd0:
         image: nsqio/nsq:v${NSQ_VERSION}
         labels:
-            ru.grachevko.dhu: 'nsqlookupd'
+            ru.grachevko.dhu: 'nsqlookupd0'
         command: /nsqlookupd -log-level debug
 
     nsqlookupd1:

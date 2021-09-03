@@ -15,9 +15,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use function Amp\asyncCall;
 use function Amp\call;
-use function array_filter;
 use function array_key_exists;
-use function array_keys;
 use function array_map;
 use function compact;
 use function explode;
@@ -43,7 +41,7 @@ final class Lookup
         LookupConfig $config = null,
         LoggerInterface $logger = null,
     ) {
-        $this->addresses = (array) $address;
+        $this->addresses = (array)$address;
         $this->config = $config ?? new LookupConfig();
         $this->logger = $logger ?? new NullLogger();
     }
@@ -56,9 +54,9 @@ final class Lookup
 
         $client = HttpClientBuilder::buildDefault();
 
-        $requestHandler = static function (string $uri, string $topic) use ($client): \Generator {
+        $requestHandler = static function (string $uri) use ($client): Generator {
             /** @var Response $response */
-            $response = yield $client->request(new Request($uri.'/lookup?topic='.$topic));
+            $response = yield $client->request(new Request($uri));
 
             $buffer = yield $response->getBody()->buffer();
 
@@ -77,51 +75,47 @@ final class Lookup
         };
 
         $callback = function () use ($requestHandler): Generator {
-            $promises = [];
             foreach ($this->addresses as $address) {
-                foreach (array_keys($this->subscriptions) as $subscription) {
-                    [$topic] = explode(':', $subscription);
+                foreach ($this->subscriptions as $key => $subscription) {
+                    [$topic, $channel] = explode(':', $key);
 
-                    $promises[$topic] = call($requestHandler, $address, $topic);
-                }
-            }
+                    $promise = call($requestHandler, $address.'/lookup?topic='.$topic);
+                    $promise->onResolve(
+                        function (?\Throwable $e, ?array $addresses) use ($key, $subscription, $topic, $channel) {
+                            if (null !== $e) {
+                                $this->logger->error($e->getMessage(), ['exception' => $e]);
 
-            $bodies = yield $promises;
+                                return;
+                            }
 
-            $consumers = [];
-            foreach ($this->subscriptions as $key => $subscription) {
-                [$topic, $channel] = explode(':', $key);
+                            if (null === $addresses) {
+                                return;
+                            }
 
-                if (!array_key_exists($topic, $bodies)) {
-                    continue;
-                }
+                            foreach ($addresses as $address) {
+                                $consumerKey = $key.$address;
 
-                $addresses = array_filter($bodies[$topic], 'strlen');
-                if ([] === $addresses) {
-                    continue;
-                }
+                                if (array_key_exists($consumerKey, $this->consumers)) {
+                                    continue;
+                                }
 
-                foreach ($addresses as $address) {
-                    $consumerKey = $key.$address;
+                                $this->logger->info('Consumer created.', compact('address', 'topic', 'channel'));
 
-                    if (array_key_exists($consumerKey, $this->consumers)) {
-                        continue;
-                    }
-
-                    $this->consumers[$consumerKey] = $consumers[] = new Consumer(
-                        $address,
-                        $topic,
-                        $channel,
-                        $subscription['callable'],
-                        $subscription['config'],
-                        $this->logger,
+                                yield ($this->consumers[$consumerKey] = new Consumer(
+                                    $address,
+                                    $topic,
+                                    $channel,
+                                    $subscription['callable'],
+                                    $subscription['config'],
+                                    $this->logger,
+                                ))->connect();
+                            }
+                        }
                     );
 
-                    $this->logger->info('Consumer {address}:{topic}:{channel} created.', compact('address', 'topic', 'channel'));
+                    yield $promise;
                 }
             }
-
-            yield array_map(static fn (Consumer $consumer) => $consumer->connect(), $consumers);
         };
 
         asyncCall($callback);
