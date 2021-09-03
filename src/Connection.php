@@ -83,7 +83,7 @@ abstract class Connection
             }
 
             if ($serverConfig->deflate) {
-                $stream = new GzipStream($stream);
+                $stream = new GzipStream($stream, $serverConfig->deflateLevel, $buffer->flush());
 
                 /** @var Response $response */
                 $response = yield $this->response($stream, $buffer);

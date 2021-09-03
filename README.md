@@ -34,7 +34,7 @@ Features
 - [X] Discovery	
 - [ ] Backoff	
 - [X] TLS	
-- [ ] Deflate	
+- [X] Deflate	
 - [X] Snappy	
 - [X] Sampling	
 - [X] AUTH
