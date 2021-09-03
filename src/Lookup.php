@@ -36,7 +36,7 @@ final class Lookup
 
     private LoggerInterface $logger;
 
-    private bool $isRunning = false;
+    private ?string $watcherId = null;
 
     public function __construct(
         string|array $address,
@@ -50,11 +50,9 @@ final class Lookup
 
     public function run(): void
     {
-        if ($this->isRunning) {
+        if (null !== $this->watcherId) {
             return;
         }
-
-        $this->isRunning = true;
 
         $client = HttpClientBuilder::buildDefault();
 
@@ -128,25 +126,18 @@ final class Lookup
 
         asyncCall($callback);
 
-        $watcherId = Loop::repeat(
-            $this->config->pollingInterval,
-            function () use (&$watcherId, $callback) {
-                if (!$this->isRunning) {
-                    $this->logger->info('Lookup stopped, cancel watcher.');
-
-                    Loop::cancel($watcherId);
-
-                    return;
-                }
-
-                yield call($callback);
-            },
-        );
+        $this->watcherId = Loop::repeat($this->config->pollingInterval, $callback);
     }
 
     public function stop(): void
     {
-        $this->isRunning = false;
+        if (null === $this->watcherId) {
+            return;
+        }
+
+        $this->logger->info('Lookup stopped, cancel watcher.');
+
+        Loop::cancel($this->watcherId);
     }
 
     public function subscribe(string $topic, string $channel, callable $onMessage, ClientConfig $clientConfig): void
