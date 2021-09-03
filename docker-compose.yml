@@ -1,18 +1,17 @@
 version: '3.7'
 
 services:
-    nsqd:
+    nsqd0:
         image: nsqio/nsq:v${NSQ_VERSION}
         labels:
-            ru.grachevko.dhu: 'nsqd'
+            ru.grachevko.dhu: 'nsqd0'
         command: >-
             nsqd
             --log-level debug
-            --lookupd-tcp-address nsqlookupd:4160
-            --broadcast-address nsqd
-        ports:
-            - '4150:4150'
-            - '4151:4151'
+            --lookupd-tcp-address nsqlookupd0:4160
+            --lookupd-tcp-address nsqlookupd1:4160
+            --lookupd-tcp-address nsqlookupd2:4160
+            --broadcast-address nsqd0
 
     nsqd1:
         image: nsqio/nsq:v${NSQ_VERSION}
@@ -21,11 +20,10 @@ services:
         command: >-
             nsqd
             --log-level debug
-            --lookupd-tcp-address nsqlookupd:4160
+            --lookupd-tcp-address nsqlookupd0:4160
+            --lookupd-tcp-address nsqlookupd1:4160
+            --lookupd-tcp-address nsqlookupd2:4160
             --broadcast-address nsqd1
-        ports:
-            - '4152:4150'
-            - '4153:4151'
 
     nsqd2:
         image: nsqio/nsq:v${NSQ_VERSION}
@@ -34,31 +32,43 @@ services:
         command: >-
             nsqd
             --log-level debug
-            --lookupd-tcp-address nsqlookupd:4160
+            --lookupd-tcp-address nsqlookupd0:4160
+            --lookupd-tcp-address nsqlookupd1:4160
+            --lookupd-tcp-address nsqlookupd2:4160
             --broadcast-address nsqd2
-        ports:
-            - '4154:4150'
-            - '4155:4151'
 
-    nsqlookupd:
+    nsqlookupd0:
         image: nsqio/nsq:v${NSQ_VERSION}
         labels:
             ru.grachevko.dhu: 'nsqlookupd'
         command: /nsqlookupd -log-level debug
-        ports:
-            - '4160:4160'
-            - '4161:4161'
+
+    nsqlookupd1:
+        image: nsqio/nsq:v${NSQ_VERSION}
+        labels:
+            ru.grachevko.dhu: 'nsqlookupd1'
+        command: /nsqlookupd -log-level debug
+
+    nsqlookupd2:
+        image: nsqio/nsq:v${NSQ_VERSION}
+        labels:
+            ru.grachevko.dhu: 'nsqlookupd2'
+        command: /nsqlookupd -log-level debug
 
     nsqadmin:
         image: nsqio/nsq:v${NSQ_VERSION}
         labels:
             ru.grachevko.dhu: 'nsqadmin'
         command:
-            - /nsqadmin
+            - nsqadmin
             - --http-address=0.0.0.0:4171
-            - --lookupd-http-address=nsqlookupd:4161
-        ports:
-            - '4171:4171'
+            - --lookupd-http-address=nsqlookupd0:4161
+            - --lookupd-http-address=nsqlookupd1:4161
+            - --lookupd-http-address=nsqlookupd2:4161
+        depends_on:
+            - nsqlookupd0
+            - nsqlookupd1
+            - nsqlookupd2
 
     tail:
         image: nsqio/nsq:v${NSQ_VERSION}
@@ -66,7 +76,7 @@ services:
             nsq_tail
             --channel nsq_tail
             --topic local
-            --lookupd-http-address nsqlookupd:4161
+            --lookupd-http-address nsqlookupd1:4161
         depends_on:
-            - nsqd
-            - nsqlookupd
+            - nsqd1
+            - nsqlookupd1

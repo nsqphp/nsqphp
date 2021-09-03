@@ -56,7 +56,6 @@ final class Lookup
 
         $this->isRunning = true;
 
-        // Instantiate the HTTP client
         $client = HttpClientBuilder::buildDefault();
 
         $requestHandler = static function (string $uri, string $topic) use ($client): \Generator {
