@@ -11,15 +11,13 @@ use Generator;
 use InvalidArgumentException;
 use Nsq\Config\ClientConfig;
 use Nsq\Config\LookupConfig;
+use Nsq\Exception\LookupException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use function Amp\call;
 use function array_key_exists;
-use function array_map;
 use function compact;
 use function explode;
-use function sprintf;
-use const JSON_THROW_ON_ERROR;
 
 final class Lookup
 {
@@ -52,25 +50,21 @@ final class Lookup
         }
 
         $client = HttpClientBuilder::buildDefault();
+        $logger = $this->logger;
 
-        $requestHandler = static function (string $uri) use ($client): Generator {
+        $requestHandler = static function (string $uri) use ($client, $logger): Generator {
             /** @var Response $response */
             $response = yield $client->request(new Request($uri));
 
             $buffer = yield $response->getBody()->buffer();
 
-            $data = json_decode($buffer, true, flags: JSON_THROW_ON_ERROR);
+            try {
+                return Lookup\Response::fromJson($buffer);
+            } catch (LookupException $e) {
+                $logger->warning($e->getMessage());
 
-            if ('TOPIC_NOT_FOUND' === ($data['message'] ?? null)) {
                 return null;
             }
-
-            return array_map(
-                static function (array $data) {
-                    return sprintf('%s:%s', $data['broadcast_address'], $data['tcp_port']);
-                },
-                $data['producers'],
-            );
         };
 
         $callback = function () use ($requestHandler): Generator {
@@ -80,18 +74,24 @@ final class Lookup
 
                     $promise = call($requestHandler, $address.'/lookup?topic='.$topic);
                     $promise->onResolve(
-                        function (?\Throwable $e, ?array $addresses) use ($key, $subscription, $topic, $channel) {
+                        function (?\Throwable $e, ?Lookup\Response $response) use (
+                            $key,
+                            $subscription,
+                            $topic,
+                            $channel
+                        ) {
                             if (null !== $e) {
                                 $this->logger->error($e->getMessage(), ['exception' => $e]);
 
                                 return;
                             }
 
-                            if (null === $addresses) {
+                            if (null === $response) {
                                 return;
                             }
 
-                            foreach ($addresses as $address) {
+                            foreach ($response->producers as $producer) {
+                                $address = sprintf('%s:%s', $producer->broadcastAddress, $producer->tcpPort);
                                 $consumerKey = $key.$address;
 
                                 if (array_key_exists($consumerKey, $this->consumers)) {
