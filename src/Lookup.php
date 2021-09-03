@@ -13,7 +13,6 @@ use Nsq\Config\ClientConfig;
 use Nsq\Config\LookupConfig;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use function Amp\asyncCall;
 use function Amp\call;
 use function array_key_exists;
 use function array_map;
@@ -41,7 +40,7 @@ final class Lookup
         LookupConfig $config = null,
         LoggerInterface $logger = null,
     ) {
-        $this->addresses = (array)$address;
+        $this->addresses = (array) $address;
         $this->config = $config ?? new LookupConfig();
         $this->logger = $logger ?? new NullLogger();
     }
@@ -118,8 +117,7 @@ final class Lookup
             }
         };
 
-        asyncCall($callback);
-
+        Loop::defer($callback);
         $this->watcherId = Loop::repeat($this->config->pollingInterval, $callback);
     }
 
@@ -132,9 +130,16 @@ final class Lookup
         $this->logger->info('Lookup stopped, cancel watcher.');
 
         Loop::cancel($this->watcherId);
+        $this->watcherId = null;
+
+        foreach ($this->consumers as $key => $consumer) {
+            $consumer->close();
+
+            unset($this->consumers[$key]);
+        }
     }
 
-    public function subscribe(string $topic, string $channel, callable $onMessage, ClientConfig $clientConfig): void
+    public function subscribe(string $topic, string $channel, callable $onMessage, ClientConfig $config = null): void
     {
         $key = $topic.':'.$channel;
 
@@ -144,8 +149,10 @@ final class Lookup
 
         $this->subscriptions[$key] = [
             'callable' => $onMessage,
-            'config' => $clientConfig,
+            'config' => $config,
         ];
+
+        $this->logger->info('Subscribed', compact('topic', 'channel'));
     }
 
     public function unsubscribe(string $topic, string $channel): void
@@ -153,5 +160,7 @@ final class Lookup
         $key = $topic.':'.$channel;
 
         unset($this->subscriptions[$key]);
+
+        $this->logger->info('Unsubscribed', compact('topic', 'channel'));
     }
 }
