@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Nsq;
@@ -7,17 +8,12 @@ use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
 use Amp\Loop;
-use Generator;
-use InvalidArgumentException;
 use Nsq\Config\ClientConfig;
 use Nsq\Config\LookupConfig;
 use Nsq\Exception\LookupException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use function Amp\call;
-use function array_key_exists;
-use function compact;
-use function explode;
 
 final class Lookup
 {
@@ -34,7 +30,7 @@ final class Lookup
     private ?string $watcherId = null;
 
     public function __construct(
-        string|array $address,
+        string | array $address,
         LookupConfig $config = null,
         LoggerInterface $logger = null,
     ) {
@@ -52,7 +48,7 @@ final class Lookup
         $client = HttpClientBuilder::buildDefault();
         $logger = $this->logger;
 
-        $requestHandler = static function (string $uri) use ($client, $logger): Generator {
+        $requestHandler = static function (string $uri) use ($client, $logger): \Generator {
             /** @var Response $response */
             $response = yield $client->request(new Request($uri));
 
@@ -67,10 +63,10 @@ final class Lookup
             }
         };
 
-        $callback = function () use ($requestHandler): Generator {
+        $callback = function () use ($requestHandler): \Generator {
             foreach ($this->addresses as $address) {
                 foreach ($this->subscriptions as $key => $subscription) {
-                    [$topic, $channel] = explode(':', $key);
+                    [$topic, $channel] = \explode(':', $key);
 
                     $promise = call($requestHandler, $address.'/lookup?topic='.$topic);
                     $promise->onResolve(
@@ -94,11 +90,11 @@ final class Lookup
                                 $address = sprintf('%s:%s', $producer->broadcastAddress, $producer->tcpPort);
                                 $consumerKey = $key.$address;
 
-                                if (array_key_exists($consumerKey, $this->consumers)) {
+                                if (\array_key_exists($consumerKey, $this->consumers)) {
                                     continue;
                                 }
 
-                                $this->logger->info('Consumer created.', compact('address', 'topic', 'channel'));
+                                $this->logger->info('Consumer created.', \compact('address', 'topic', 'channel'));
 
                                 yield ($this->consumers[$consumerKey] = new Consumer(
                                     $address,
@@ -109,7 +105,7 @@ final class Lookup
                                     $this->logger,
                                 ))->connect();
                             }
-                        }
+                        },
                     );
 
                     yield $promise;
@@ -143,8 +139,8 @@ final class Lookup
     {
         $key = $topic.':'.$channel;
 
-        if (array_key_exists($key, $this->subscriptions)) {
-            throw new InvalidArgumentException('Subscription already exists.');
+        if (\array_key_exists($key, $this->subscriptions)) {
+            throw new \InvalidArgumentException('Subscription already exists.');
         }
 
         $this->subscriptions[$key] = [
@@ -152,7 +148,7 @@ final class Lookup
             'config' => $config,
         ];
 
-        $this->logger->info('Subscribed', compact('topic', 'channel'));
+        $this->logger->info('Subscribed', \compact('topic', 'channel'));
     }
 
     public function unsubscribe(string $topic, string $channel): void
@@ -161,6 +157,6 @@ final class Lookup
 
         unset($this->subscriptions[$key]);
 
-        $this->logger->info('Unsubscribed', compact('topic', 'channel'));
+        $this->logger->info('Unsubscribed', \compact('topic', 'channel'));
     }
 }

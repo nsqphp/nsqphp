@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Nsq\Lookup;
 
 use Nsq\Exception\LookupException;
@@ -7,7 +9,7 @@ use Nsq\Exception\LookupException;
 final class Response
 {
     /**
-     * @param string[] $channels
+     * @param string[]   $channels
      * @param Producer[] $producers
      */
     public function __construct(
@@ -20,7 +22,7 @@ final class Response
     {
         $array = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
 
-        if (array_key_exists('message', $array)) {
+        if (\array_key_exists('message', $array)) {
             throw new LookupException($array['message']);
         }
 
