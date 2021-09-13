@@ -116,6 +116,11 @@ abstract class Connection
 
         $this->stream->close();
         $this->stream = new NullStream();
+
+        $this->logger->debug('{class} disconnected from {address}', [
+            'class' => static::class,
+            'address' => $this->address,
+        ]);
     }
 
     protected function handleError(Frame\Error $error): void

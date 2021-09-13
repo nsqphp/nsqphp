@@ -15,6 +15,20 @@ use function Amp\call;
 
 final class Producer extends Connection
 {
+
+    public function __construct(
+        private string $address,
+        private ClientConfig $clientConfig,
+        private LoggerInterface $logger,
+    )
+    {
+        parent::__construct(
+            $this->address,
+            $this->clientConfig,
+            $this->logger,
+        );
+    }
+
     public static function create(
         string $address,
         ClientConfig $clientConfig = null,
@@ -36,6 +50,10 @@ final class Producer extends Connection
 
         return call(function (): \Generator {
             yield parent::connect();
+
+            $this->logger->debug('Producer connected to {host}', [
+                'host' => $this->address,
+            ]);
 
             $this->run();
         });

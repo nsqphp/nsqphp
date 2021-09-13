@@ -69,6 +69,12 @@ final class Consumer extends Connection
         return call(function (): \Generator {
             yield parent::connect();
 
+            $this->logger->debug('Consumer {topic}:{channel} connected to {host}', [
+                'topic' => $this->topic,
+                'channel' => $this->channel,
+                'host' => $this->address,
+            ]);
+
             $this->run();
         });
     }
