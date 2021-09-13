@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Nsq\Stream;
 
+use Amp\Failure;
 use Amp\Promise;
 use Amp\Success;
+use Nsq\Exception\NsqException;
 use Nsq\Stream;
-use function Amp\call;
 
 final class NullStream implements Stream
 {
@@ -24,8 +25,7 @@ final class NullStream implements Stream
      */
     public function write(string $data): Promise
     {
-        return call(static function (): void {
-        });
+        return new Failure(new NsqException('Connection closed.'));
     }
 
     /**
