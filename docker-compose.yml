@@ -1,41 +1,16 @@
 version: '3.7'
 
 services:
-    nsqd0:
+    nsqd:
         image: nsqio/nsq:v${NSQ_VERSION}
         labels:
-            ru.grachevko.dhu: 'nsqd0'
+            ru.grachevko.dhu: 'nsqd'
         command: >-
             nsqd
             --log-level debug
             --lookupd-tcp-address nsqlookupd0:4160
             --lookupd-tcp-address nsqlookupd1:4160
             --lookupd-tcp-address nsqlookupd2:4160
-            --broadcast-address nsqd0
-
-    nsqd1:
-        image: nsqio/nsq:v${NSQ_VERSION}
-        labels:
-            ru.grachevko.dhu: 'nsqd1'
-        command: >-
-            nsqd
-            --log-level debug
-            --lookupd-tcp-address nsqlookupd0:4160
-            --lookupd-tcp-address nsqlookupd1:4160
-            --lookupd-tcp-address nsqlookupd2:4160
-            --broadcast-address nsqd1
-
-    nsqd2:
-        image: nsqio/nsq:v${NSQ_VERSION}
-        labels:
-            ru.grachevko.dhu: 'nsqd2'
-        command: >-
-            nsqd
-            --log-level debug
-            --lookupd-tcp-address nsqlookupd0:4160
-            --lookupd-tcp-address nsqlookupd1:4160
-            --lookupd-tcp-address nsqlookupd2:4160
-            --broadcast-address nsqd2
 
     nsqlookupd0:
         image: nsqio/nsq:v${NSQ_VERSION}
@@ -78,5 +53,5 @@ services:
             --topic local
             --lookupd-http-address nsqlookupd1:4161
         depends_on:
-            - nsqd1
+            - nsqd
             - nsqlookupd1
