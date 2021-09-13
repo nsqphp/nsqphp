@@ -37,6 +37,11 @@ abstract class Connection
         $this->close();
     }
 
+    public function isConnected(): bool
+    {
+        return !$this->stream instanceof NullStream;
+    }
+
     /**
      * @return Promise<void>
      */
