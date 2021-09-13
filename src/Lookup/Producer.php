@@ -13,6 +13,8 @@ final class Producer
         public int $tcpPort,
         public int $httpPort,
         public string $version,
+        public array $tombstones,
+        public array $topics,
     ) {
     }
 
@@ -25,6 +27,8 @@ final class Producer
             $array['tcp_port'],
             $array['http_port'],
             $array['version'],
+            $array['tombstones'] ?? [],
+            $array['topics'] ?? [],
         );
     }
 }

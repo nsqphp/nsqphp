@@ -27,7 +27,7 @@ final class Response
         }
 
         return new self(
-            $array['channels'],
+            $array['channels'] ?? [],
             array_map([Producer::class, 'fromArray'], $array['producers']),
         );
     }
