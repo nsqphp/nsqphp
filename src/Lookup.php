@@ -57,7 +57,7 @@ final class Lookup
             try {
                 return Lookup\Response::fromJson($buffer);
             } catch (LookupException $e) {
-                $logger->warning($e->getMessage());
+                $logger->log($e->level(), $uri.' '.$e->getMessage());
 
                 return null;
             }
