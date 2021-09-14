@@ -31,4 +31,9 @@ final class Producer
             $array['topics'] ?? [],
         );
     }
+
+    public function toTcpUri(): string
+    {
+        return sprintf('%s:%s', $this->broadcastAddress, $this->tcpPort);
+    }
 }
