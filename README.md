@@ -96,9 +96,10 @@ $callable = static function (Message $message): Generator {
 };
 
 $lookup->subscribe(topic: 'topic', channel: 'channel', onMessage: $callable);  
-$lookup->subscribe(topic: 'anotherTopic', channel: 'channel', onMessage: $callable);  
+$lookup->subscribe(topic: 'anotherTopic', channel: 'channel', onMessage: $callable);
 
-$lookup->run();
+$lookup->unsubscribe(topic: 'local', channel: 'channel');
+$lookup->stop(); // unsubscribe all  
 ```
 
 ### Integrations
