@@ -24,12 +24,19 @@ abstract class Connection
 {
     protected Stream $stream;
 
+    /**
+     * @var callable
+     */
+    private $onCloseCallback;
+
     public function __construct(
         private string $address,
         private ClientConfig $clientConfig,
         private LoggerInterface $logger,
     ) {
         $this->stream = new NullStream();
+        $this->onCloseCallback = static function () {
+        };
     }
 
     public function __destruct()
@@ -126,6 +133,15 @@ abstract class Connection
             'class' => static::class,
             'address' => $this->address,
         ]);
+
+        ($this->onCloseCallback)();
+    }
+
+    public function onClose(callable $callback): static
+    {
+        $this->onCloseCallback = $callback;
+
+        return $this;
     }
 
     protected function handleError(Frame\Error $error): void
