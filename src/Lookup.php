@@ -89,7 +89,7 @@ final class Lookup
     public function stop(): void
     {
         foreach ($this->running as $topic => $channels) {
-            foreach ($channels as $channel) {
+            foreach (array_keys($channels) as $channel) {
                 $this->unsubscribe($topic, $channel);
             }
         }
@@ -175,6 +175,10 @@ final class Lookup
         }
 
         unset($this->running[$topic][$channel]);
+
+        if ([] === $this->running[$topic]) {
+            unset($this->running[$topic]);
+        }
 
         $this->logger->info('Unsubscribed', compact('topic', 'channel'));
     }
