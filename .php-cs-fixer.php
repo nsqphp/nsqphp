@@ -39,6 +39,7 @@ return (new PhpCsFixer\Config())
             'after_heredoc' => true,
             'elements' => ['arrays', 'arguments', 'parameters'],
         ],
+        'types_spaces' => ['space' => 'single'],
     ])
     ->setFinder($finder)
     ->setCacheFile(__DIR__.'/.php-cs-fixer.cache');
