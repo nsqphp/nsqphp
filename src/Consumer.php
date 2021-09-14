@@ -99,7 +99,7 @@ final class Consumer extends Connection
 
             yield $this->rdy(1);
 
-            /** @phpstan-ignore-next-line  */
+            /** @phpstan-ignore-next-line */
             asyncCall(function () use ($buffer): \Generator {
                 while (null !== $chunk = yield $this->stream->read()) {
                     $buffer->append($chunk);
@@ -129,6 +129,12 @@ final class Consumer extends Connection
                         }
                     }
                 }
+
+                $this->logger->debug('Consumer disconnected.', [
+                    'address' => $this->address,
+                    'topic' => $this->topic,
+                    'channel' => $this->channel,
+                ]);
 
                 $this->stream = new NullStream();
             });
