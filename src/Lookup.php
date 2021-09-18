@@ -53,7 +53,7 @@ final class Lookup
     }
 
     /**
-     * @return Promise<Lookup\Producer>
+     * @psalm-return Promise<Lookup\Producer[]>
      */
     public function nodes(): Promise
     {
