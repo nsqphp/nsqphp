@@ -30,7 +30,7 @@ final class Response extends Frame
     }
 
     /**
-     * @return array<mixed, mixed>
+     * @psalm-return array<mixed, mixed>
      */
     public function toArray(): array
     {

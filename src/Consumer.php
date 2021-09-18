@@ -136,7 +136,7 @@ final class Consumer extends Connection
     /**
      * Update RDY state (indicate you are ready to receive N messages).
      *
-     * @return Promise<bool>
+     * @psalm-return Promise<bool>
      */
     public function rdy(int $count): Promise
     {
@@ -165,7 +165,7 @@ final class Consumer extends Connection
     /**
      * Finish a message (indicate successful processing).
      *
-     * @return Promise<bool>
+     * @psalm-return Promise<bool>
      *
      * @internal
      */
@@ -192,7 +192,7 @@ final class Consumer extends Connection
      * be explicitly relied upon and may change in the future. Similarly, a message that is in-flight and times out
      * behaves identically to an explicit REQ.
      *
-     * @return Promise<bool>
+     * @psalm-return Promise<bool>
      *
      * @internal
      */
@@ -216,7 +216,7 @@ final class Consumer extends Connection
     /**
      * Reset the timeout for an in-flight message.
      *
-     * @return Promise<bool>
+     * @psalm-return Promise<bool>
      *
      * @internal
      */

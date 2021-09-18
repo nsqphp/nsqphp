@@ -93,7 +93,7 @@ final class Producer extends Connection
      *
      * @psalm-param positive-int|0      $delay
      *
-     * @return Promise<bool>
+     * @psalm-return Promise<bool>
      */
     public function publish(string $topic, string | array $body, int $delay = 0): Promise
     {

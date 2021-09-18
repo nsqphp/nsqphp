@@ -60,7 +60,7 @@ abstract class Connection
     }
 
     /**
-     * @return Promise<void>
+     * @psalm-return Promise<void>
      */
     public function connect(): Promise
     {
@@ -237,7 +237,7 @@ abstract class Connection
     }
 
     /**
-     * @return Promise<Frame\Response>
+     * @psalm-return Promise<Frame\Response>
      */
     private function response(Stream $stream, Buffer $buffer): Promise
     {

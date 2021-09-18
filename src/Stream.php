@@ -10,12 +10,12 @@ use Amp\Promise;
 interface Stream
 {
     /**
-     * @return Promise<null|string>
+     * @psalm-return Promise<null|string>
      */
     public function read(): Promise;
 
     /**
-     * @return Promise<void>
+     * @psalm-return Promise<void>
      */
     public function write(string $data): Promise;
 

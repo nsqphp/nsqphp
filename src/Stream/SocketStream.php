@@ -19,7 +19,7 @@ class SocketStream implements Stream
     }
 
     /**
-     * @return Promise<self>
+     * @psalm-return Promise<self>
      */
     public static function connect(string $uri, int $timeout = 0, int $attempts = 0, bool $noDelay = false): Promise
     {
@@ -48,7 +48,7 @@ class SocketStream implements Stream
     }
 
     /**
-     * @return Promise<null|string>
+     * @psalm-return Promise<null|string>
      */
     public function read(): Promise
     {
@@ -56,7 +56,7 @@ class SocketStream implements Stream
     }
 
     /**
-     * @return Promise<void>
+     * @psalm-return Promise<void>
      */
     public function write(string $data): Promise
     {
@@ -72,7 +72,7 @@ class SocketStream implements Stream
     }
 
     /**
-     * @return Promise<void>
+     * @psalm-return Promise<void>
      */
     public function setupTls(): Promise
     {
