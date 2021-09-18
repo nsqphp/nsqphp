@@ -30,6 +30,11 @@ abstract class Connection
     /**
      * @var callable
      */
+    private $onConnectCallback;
+
+    /**
+     * @var callable
+     */
     private $onCloseCallback;
 
     public function __construct(
@@ -38,7 +43,17 @@ abstract class Connection
         private LoggerInterface $logger,
     ) {
         $this->stream = new NullStream();
-        $this->onCloseCallback = static function () {
+        $this->onConnectCallback = static function () use ($logger, $address) {
+            $logger->debug('Connected.', [
+                'class' => static::class,
+                'address' => $address,
+            ]);
+        };
+        $this->onCloseCallback = static function () use ($logger, $address) {
+            $logger->debug('Disconnected.', [
+                'class' => static::class,
+                'address' => $address,
+            ]);
         };
     }
 
@@ -122,6 +137,8 @@ abstract class Connection
             }
 
             $this->stream = $stream;
+
+            ($this->onConnectCallback)();
         });
     }
 
@@ -164,9 +181,24 @@ abstract class Connection
         ($this->onCloseCallback)();
     }
 
+    public function onConnect(callable $callback): static
+    {
+        $previous = $this->onConnectCallback;
+        $this->onConnectCallback = static function () use ($previous, $callback) {
+            $previous();
+            $callback();
+        };
+
+        return $this;
+    }
+
     public function onClose(callable $callback): static
     {
-        $this->onCloseCallback = $callback;
+        $previous = $this->onCloseCallback;
+        $this->onCloseCallback = static function () use ($previous, $callback) {
+            $previous();
+            $callback();
+        };
 
         return $this;
     }
