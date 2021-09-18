@@ -9,7 +9,6 @@ use Amp\Promise;
 use Nsq\Config\ClientConfig;
 use Nsq\Exception\ConsumerException;
 use Nsq\Frame\Response;
-use Nsq\Stream\NullStream;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use function Amp\asyncCall;
@@ -61,7 +60,7 @@ final class Consumer extends Connection
 
     public function connect(): Promise
     {
-        if (!$this->stream instanceof NullStream) {
+        if ($this->isConnected()) {
             return call(static function (): void {
             });
         }
@@ -84,9 +83,9 @@ final class Consumer extends Connection
         $buffer = new Buffer();
 
         asyncCall(function () use ($buffer): \Generator {
-            yield $this->stream->write(Command::sub($this->topic, $this->channel));
+            yield $this->write(Command::sub($this->topic, $this->channel));
 
-            if (null !== ($chunk = yield $this->stream->read())) {
+            if (null !== ($chunk = yield $this->read())) {
                 $buffer->append($chunk);
             }
 
@@ -101,14 +100,14 @@ final class Consumer extends Connection
 
             /** @phpstan-ignore-next-line */
             asyncCall(function () use ($buffer): \Generator {
-                while (null !== $chunk = yield $this->stream->read()) {
+                while (null !== $chunk = yield $this->read()) {
                     $buffer->append($chunk);
 
                     while ($frame = Parser::parse($buffer)) {
                         switch (true) {
                             case $frame instanceof Frame\Response:
                                 if ($frame->isHeartBeat()) {
-                                    yield $this->stream->write(Command::nop());
+                                    yield $this->write(Command::nop());
 
                                     break;
                                 }
@@ -136,7 +135,7 @@ final class Consumer extends Connection
                     'channel' => $this->channel,
                 ]);
 
-                $this->stream = new NullStream();
+                $this->close(false);
             });
         });
     }
@@ -155,7 +154,7 @@ final class Consumer extends Connection
 
         $this->rdy = $count;
 
-        return $this->stream->write(Command::rdy($count));
+        return $this->write(Command::rdy($count));
     }
 
     /**
@@ -167,7 +166,7 @@ final class Consumer extends Connection
      */
     public function fin(string $id): Promise
     {
-        return $this->stream->write(Command::fin($id));
+        return $this->write(Command::fin($id));
     }
 
     /**
@@ -182,7 +181,7 @@ final class Consumer extends Connection
      */
     public function req(string $id, int $timeout): Promise
     {
-        return $this->stream->write(Command::req($id, $timeout));
+        return $this->write(Command::req($id, $timeout));
     }
 
     /**
@@ -194,6 +193,6 @@ final class Consumer extends Connection
      */
     public function touch(string $id): Promise
     {
-        return $this->stream->write(Command::touch($id));
+        return $this->write(Command::touch($id));
     }
 }

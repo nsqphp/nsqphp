@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nsq;
 
 use Amp\ByteStream\ClosedException;
+use Amp\Failure;
 use Amp\Promise;
 use Nsq\Config\ClientConfig;
 use Nsq\Config\ServerConfig;
@@ -23,7 +24,7 @@ use function Amp\call;
  */
 abstract class Connection
 {
-    protected Stream $stream;
+    private Stream $stream;
 
     /**
      * @var callable
@@ -42,7 +43,7 @@ abstract class Connection
 
     public function __destruct()
     {
-        $this->close();
+        $this->close(false);
     }
 
     public function isConnected(): bool
@@ -143,6 +144,28 @@ abstract class Connection
         $this->onCloseCallback = $callback;
 
         return $this;
+    }
+
+    protected function read(): Promise
+    {
+        try {
+            return $this->stream->read();
+        } catch (\Throwable $e) {
+            $this->close(false);
+
+            return new Failure($e);
+        }
+    }
+
+    protected function write(string $data): Promise
+    {
+        try {
+            return $this->stream->write($data);
+        } catch (\Throwable $e) {
+            $this->close(false);
+
+            return new Failure($e);
+        }
     }
 
     protected function handleError(Frame\Error $error): void

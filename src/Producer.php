@@ -7,7 +7,6 @@ namespace Nsq;
 use Amp\Promise;
 use Nsq\Config\ClientConfig;
 use Nsq\Exception\NsqException;
-use Nsq\Stream\NullStream;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use function Amp\asyncCall;
@@ -41,7 +40,7 @@ final class Producer extends Connection
 
     public function connect(): Promise
     {
-        if (!$this->stream instanceof NullStream) {
+        if ($this->isConnected()) {
             return call(static function (): void {
             });
         }
@@ -70,7 +69,7 @@ final class Producer extends Connection
             return call(
                 function (array $bodies) use ($topic, $delay): \Generator {
                     foreach ($bodies as $body) {
-                        yield $this->stream->write(Command::dpub($topic, $body, $delay));
+                        yield $this->write(Command::dpub($topic, $body, $delay));
                     }
                 },
                 (array) $body,
@@ -81,7 +80,7 @@ final class Producer extends Connection
             ? Command::mpub($topic, $body)
             : Command::pub($topic, $body);
 
-        return $this->stream->write($command);
+        return $this->write($command);
     }
 
     private function run(): void
@@ -89,14 +88,14 @@ final class Producer extends Connection
         $buffer = new Buffer();
 
         asyncCall(function () use ($buffer): \Generator {
-            while (null !== $chunk = yield $this->stream->read()) {
+            while (null !== $chunk = yield $this->read()) {
                 $buffer->append($chunk);
 
                 while ($frame = Parser::parse($buffer)) {
                     switch (true) {
                         case $frame instanceof Frame\Response:
                             if ($frame->isHeartBeat()) {
-                                yield $this->stream->write(Command::nop());
+                                yield $this->write(Command::nop());
                             }
 
                             // Ok received
@@ -111,7 +110,7 @@ final class Producer extends Connection
                 }
             }
 
-            $this->stream = new NullStream();
+            $this->close(false);
         });
     }
 }
