@@ -28,6 +28,8 @@ final class Lookup
 
     private array $running = [];
 
+    private array $topicWatchers = [];
+
     public function __construct(
         private array $addresses,
         private LookupConfig $config,
@@ -183,8 +185,16 @@ final class Lookup
 
     private function watch(string $topic): void
     {
+        if (\array_key_exists($topic, $this->topicWatchers)) {
+            return;
+        }
+
+        $this->topicWatchers[$topic] = true;
+
         asyncCall(function () use ($topic) {
             $requestHandler = function (string $uri) use ($topic): \Generator {
+                $this->logger->debug('Lookup', compact('topic'));
+
                 /** @var Response $response */
                 $response = yield $this->httpClient->request(new Request($uri.'/lookup?topic='.$topic));
 
@@ -221,6 +231,8 @@ final class Lookup
 
                 yield delay($this->config->pollingInterval);
             }
+
+            unset($this->topicWatchers[$topic]);
         });
     }
 }
