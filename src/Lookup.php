@@ -10,6 +10,7 @@ use Amp\Http\Client\DelegateHttpClient;
 use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
+use Amp\NullCancellationToken;
 use Amp\Promise;
 use Nsq\Config\ClientConfig;
 use Nsq\Config\LookupConfig;
@@ -23,7 +24,7 @@ use function Amp\delay;
 final class Lookup
 {
     /**
-     * @var array<string, array<string, Lookup\Producer[]>>
+     * @psalm-var array<string, array<string, Lookup\Producer>>
      */
     private array $producers = [];
 
@@ -60,10 +61,10 @@ final class Lookup
      */
     public function nodes(): Promise
     {
-        return call(function () {
+        return call(function (): \Generator {
             $requestHandler = function (string $uri): \Generator {
                 /** @var Response $response */
-                $response = yield $this->httpClient->request(new Request($uri.'/nodes'));
+                $response = yield $this->httpClient->request(new Request($uri.'/nodes'), new NullCancellationToken());
 
                 try {
                     return Lookup\Response::fromJson(yield $response->getBody()->buffer());
@@ -101,6 +102,9 @@ final class Lookup
         $this->logger->info('Lookup stopped.');
     }
 
+    /**
+     * @psalm-suppress InvalidPropertyAssignmentValue
+     */
     public function subscribe(string $topic, string $channel, callable $onMessage, ClientConfig $config = null): void
     {
         if (null !== ($this->running[$topic][$channel] ?? null)) {
@@ -109,7 +113,7 @@ final class Lookup
 
         $this->running[$topic][$channel] = true;
 
-        asyncCall(function () use ($topic, $channel, $onMessage, $config) {
+        asyncCall(function () use ($topic, $channel, $onMessage, $config): \Generator {
             while (true) {
                 if (null === ($this->running[$topic][$channel] ?? null)) {
                     return;
@@ -132,7 +136,7 @@ final class Lookup
                     }
 
                     $this->keepConnection(
-                        new Consumer(
+                        Consumer::create(
                             $address,
                             $topic,
                             $channel,
@@ -173,7 +177,7 @@ final class Lookup
     {
         $this->consumers[$consumer->address][$consumer->topic][$consumer->channel] = $consumer;
 
-        asyncCall(function () use ($consumer) {
+        asyncCall(function () use ($consumer): \Generator {
             while (null !== ($this->consumers[$consumer->address][$consumer->topic][$consumer->channel] ?? null)) {
                 try {
                     yield $consumer->connect();
@@ -219,12 +223,13 @@ final class Lookup
 
         $this->topicWatchers[$topic] = true;
 
-        asyncCall(function () use ($topic) {
-            $requestHandler = function (string $uri) use ($topic): \Generator {
+        asyncCall(function () use ($topic): \Generator {
+            $cancellationToken = new NullCancellationToken();
+            $requestHandler = function (string $uri) use ($topic, $cancellationToken): \Generator {
                 $this->logger->debug('Lookup', compact('topic'));
 
                 /** @var Response $response */
-                $response = yield $this->httpClient->request(new Request($uri.'/lookup?topic='.$topic));
+                $response = yield $this->httpClient->request(new Request($uri.'/lookup?topic='.$topic), $cancellationToken);
 
                 try {
                     return Lookup\Response::fromJson(yield $response->getBody()->buffer());

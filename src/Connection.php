@@ -46,9 +46,9 @@ abstract class Connection
         protected LoggerInterface $logger,
     ) {
         $this->stream = new NullStream();
-        $this->onConnectCallback = static function () {
+        $this->onConnectCallback = static function (): void {
         };
-        $this->onCloseCallback = static function () {
+        $this->onCloseCallback = static function (): void {
         };
     }
 
@@ -153,16 +153,13 @@ abstract class Connection
             ]);
 
             asyncCall(static function () use ($stream, $logger): \Generator {
-                $promise = $stream->write(Command::cls());
-                $promise->onResolve(static function (?\Throwable $e) use ($stream, $logger) {
-                    $stream->close();
+                try {
+                    yield $stream->write(Command::cls());
+                } catch (\Throwable $e) {
+                    $logger->warning($e->getMessage(), ['exception' => $e]);
+                }
 
-                    if (null !== $e) {
-                        $logger->warning($e->getMessage(), ['exception' => $e]);
-                    }
-                });
-
-                yield $promise;
+                $stream->close();
             });
 
             return;
@@ -179,7 +176,7 @@ abstract class Connection
     public function onConnect(callable $callback): static
     {
         $previous = $this->onConnectCallback;
-        $this->onConnectCallback = static function () use ($previous, $callback) {
+        $this->onConnectCallback = static function () use ($previous, $callback): void {
             $previous();
             $callback();
         };
@@ -190,7 +187,7 @@ abstract class Connection
     public function onClose(callable $callback): static
     {
         $previous = $this->onCloseCallback;
-        $this->onCloseCallback = static function () use ($previous, $callback) {
+        $this->onCloseCallback = static function () use ($previous, $callback): void {
             $previous();
             $callback();
         };
@@ -198,11 +195,14 @@ abstract class Connection
         return $this;
     }
 
+    /**
+     * @psalm-return Promise<null|string>
+     */
     protected function read(): Promise
     {
-        return call(function () {
+        return call(function (): \Generator {
             try {
-                return $this->stream->read();
+                return yield $this->stream->read();
             } catch (\Throwable $e) {
                 $this->logger->error($e->getMessage(), ['exception' => $e]);
 
@@ -213,9 +213,12 @@ abstract class Connection
         });
     }
 
+    /**
+     * @psalm-return Promise<void>
+     */
     protected function write(string $data): Promise
     {
-        return call(function () use ($data) {
+        return call(function () use ($data): \Generator {
             try {
                 return yield $this->stream->write($data);
             } catch (\Throwable $e) {

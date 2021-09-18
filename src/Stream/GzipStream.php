@@ -45,7 +45,7 @@ class GzipStream implements Stream
      */
     public function read(): Promise
     {
-        return call(function () {
+        return call(function (): \Generator {
             if (null === $this->inflate) {
                 return null;
             }
@@ -91,6 +91,9 @@ class GzipStream implements Stream
         return $this->stream->write($compressed);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function close(): void
     {
         $this->stream->close();

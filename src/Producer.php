@@ -27,10 +27,10 @@ final class Producer extends Connection
         );
 
         $context = compact('address');
-        $this->onConnect(function () use ($context) {
+        $this->onConnect(function () use ($context): void {
             $this->logger->debug('Producer connected.', $context);
         });
-        $this->onClose(function () use ($context) {
+        $this->onClose(function () use ($context): void {
             $this->logger->debug('Producer disconnected.', $context);
         });
         $this->logger->debug('Producer created.', $context);
@@ -95,7 +95,7 @@ final class Producer extends Connection
      *
      * @psalm-return Promise<bool>
      */
-    public function publish(string $topic, string | array $body, int $delay = 0): Promise
+    public function publish(string $topic, string | array $body, int $delay = null): Promise
     {
         if (!$this->isConnected()) {
             return new Success(false);

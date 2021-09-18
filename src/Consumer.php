@@ -47,10 +47,10 @@ final class Consumer extends Connection
         $this->onMessage = $onMessage;
 
         $context = compact('address', 'topic', 'channel');
-        $this->onConnect(function () use ($context) {
+        $this->onConnect(function () use ($context): void {
             $this->logger->debug('Consumer connected.', $context);
         });
-        $this->onClose(function () use ($context) {
+        $this->onClose(function () use ($context): void {
             $this->logger->debug('Consumer disconnected.', $context);
         });
         $this->logger->debug('Consumer created.', $context);
@@ -151,13 +151,12 @@ final class Consumer extends Connection
         }
 
         if ($this->rdy === $count) {
-            return call(static function (): void {
-            });
+            return new Success(true);
         }
 
         $this->rdy = $count;
 
-        return call(function () use ($count) {
+        return call(function () use ($count): \Generator {
             try {
                 yield $this->write(Command::rdy($count));
 
@@ -181,7 +180,7 @@ final class Consumer extends Connection
             return new Success(false);
         }
 
-        return call(function () use ($id) {
+        return call(function () use ($id): \Generator {
             try {
                 yield $this->write(Command::fin($id));
 
@@ -208,7 +207,7 @@ final class Consumer extends Connection
             return new Success(false);
         }
 
-        return call(function () use ($id, $timeout) {
+        return call(function () use ($id, $timeout): \Generator {
             try {
                 yield $this->write(Command::req($id, $timeout));
 
@@ -232,7 +231,7 @@ final class Consumer extends Connection
             return new Success(false);
         }
 
-        return call(function () use ($id) {
+        return call(function () use ($id): \Generator {
             try {
                 yield $this->write(Command::touch($id));
 
