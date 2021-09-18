@@ -57,7 +57,33 @@ final class Producer extends Connection
         return call(function (): \Generator {
             yield parent::connect();
 
-            $this->run();
+            $buffer = new Buffer();
+
+            asyncCall(function () use ($buffer): \Generator {
+                while (null !== $chunk = yield $this->read()) {
+                    $buffer->append($chunk);
+
+                    while ($frame = Parser::parse($buffer)) {
+                        switch (true) {
+                            case $frame instanceof Frame\Response:
+                                if ($frame->isHeartBeat()) {
+                                    yield $this->write(Command::nop());
+                                }
+
+                                // Ok received
+                                break;
+                            case $frame instanceof Frame\Error:
+                                $this->handleError($frame);
+
+                                break;
+                            default:
+                                throw new NsqException('Unreachable statement.');
+                        }
+                    }
+                }
+
+                $this->close(false);
+            });
         });
     }
 
@@ -86,36 +112,5 @@ final class Producer extends Connection
             : Command::pub($topic, $body);
 
         return $this->write($command);
-    }
-
-    private function run(): void
-    {
-        $buffer = new Buffer();
-
-        asyncCall(function () use ($buffer): \Generator {
-            while (null !== $chunk = yield $this->read()) {
-                $buffer->append($chunk);
-
-                while ($frame = Parser::parse($buffer)) {
-                    switch (true) {
-                        case $frame instanceof Frame\Response:
-                            if ($frame->isHeartBeat()) {
-                                yield $this->write(Command::nop());
-                            }
-
-                            // Ok received
-                            break;
-                        case $frame instanceof Frame\Error:
-                            $this->handleError($frame);
-
-                            break;
-                        default:
-                            throw new NsqException('Unreachable statement.');
-                    }
-                }
-            }
-
-            $this->close(false);
-        });
     }
 }

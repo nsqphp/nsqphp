@@ -77,62 +77,57 @@ final class Consumer extends Connection
         return call(function (): \Generator {
             yield parent::connect();
 
-            $this->run();
-        });
-    }
+            $buffer = new Buffer();
 
-    private function run(): void
-    {
-        $buffer = new Buffer();
-
-        asyncCall(function () use ($buffer): \Generator {
-            yield $this->write(Command::sub($this->topic, $this->channel));
-
-            if (null !== ($chunk = yield $this->read())) {
-                $buffer->append($chunk);
-            }
-
-            /** @var Response $response */
-            $response = Parser::parse($buffer);
-
-            if (!$response->isOk()) {
-                return new Failure(new ConsumerException('Fail subscription.'));
-            }
-
-            yield $this->rdy(1);
-
-            /** @phpstan-ignore-next-line */
             asyncCall(function () use ($buffer): \Generator {
-                while (null !== $chunk = yield $this->read()) {
+                yield $this->write(Command::sub($this->topic, $this->channel));
+
+                if (null !== ($chunk = yield $this->read())) {
                     $buffer->append($chunk);
-
-                    while ($frame = Parser::parse($buffer)) {
-                        switch (true) {
-                            case $frame instanceof Frame\Response:
-                                if ($frame->isHeartBeat()) {
-                                    yield $this->write(Command::nop());
-
-                                    break;
-                                }
-
-                                throw ConsumerException::response($frame);
-                            case $frame instanceof Frame\Error:
-                                $this->handleError($frame);
-
-                                break;
-                            case $frame instanceof Frame\Message:
-                                asyncCall($this->onMessage, Message::compose($frame, $this));
-
-                                break;
-                        }
-
-                        if ($this->rdy !== $this->clientConfig->rdyCount) {
-                            yield $this->rdy($this->clientConfig->rdyCount);
-                        }
-                    }
                 }
 
-                $this->close(false);
+                /** @var Response $response */
+                $response = Parser::parse($buffer);
+
+                if (!$response->isOk()) {
+                    return new Failure(new ConsumerException('Fail subscription.'));
+                }
+
+                yield $this->rdy(1);
+
+                /** @phpstan-ignore-next-line */
+                asyncCall(function () use ($buffer): \Generator {
+                    while (null !== $chunk = yield $this->read()) {
+                        $buffer->append($chunk);
+
+                        while ($frame = Parser::parse($buffer)) {
+                            switch (true) {
+                                case $frame instanceof Frame\Response:
+                                    if ($frame->isHeartBeat()) {
+                                        yield $this->write(Command::nop());
+
+                                        break;
+                                    }
+
+                                    throw ConsumerException::response($frame);
+                                case $frame instanceof Frame\Error:
+                                    $this->handleError($frame);
+
+                                    break;
+                                case $frame instanceof Frame\Message:
+                                    asyncCall($this->onMessage, Message::compose($frame, $this));
+
+                                    break;
+                            }
+
+                            if ($this->rdy !== $this->clientConfig->rdyCount) {
+                                yield $this->rdy($this->clientConfig->rdyCount);
+                            }
+                        }
+                    }
+
+                    $this->close(false);
+                });
             });
         });
     }
