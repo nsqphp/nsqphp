@@ -205,24 +205,32 @@ abstract class Connection
 
     protected function read(): Promise
     {
-        try {
-            return $this->stream->read();
-        } catch (\Throwable $e) {
-            $this->close(false);
+        return call(function () {
+            try {
+                return $this->stream->read();
+            } catch (\Throwable $e) {
+                $this->logger->error($e->getMessage(), ['exception' => $e]);
 
-            return new Failure($e);
-        }
+                $this->close(false);
+
+                return new Failure($e);
+            }
+        });
     }
 
     protected function write(string $data): Promise
     {
-        try {
-            return $this->stream->write($data);
-        } catch (\Throwable $e) {
-            $this->close(false);
+        return call(function () use ($data) {
+            try {
+                return yield $this->stream->write($data);
+            } catch (\Throwable $e) {
+                $this->logger->error($e->getMessage(), ['exception' => $e]);
 
-            return new Failure($e);
-        }
+                $this->close(false);
+
+                return new Failure($e);
+            }
+        });
     }
 
     protected function handleError(Frame\Error $error): void
