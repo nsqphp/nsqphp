@@ -38,6 +38,15 @@ final class Consumer extends Connection
         );
 
         $this->onMessage = $onMessage;
+
+        $context = compact('address', 'topic', 'channel');
+        $this->onConnect(function () use ($context) {
+            $this->logger->debug('Consumer connected.', $context);
+        });
+        $this->onClose(function () use ($context) {
+            $this->logger->debug('Consumer disconnected.', $context);
+        });
+        $this->logger->debug('Consumer created.', $context);
     }
 
     public static function create(
@@ -67,12 +76,6 @@ final class Consumer extends Connection
 
         return call(function (): \Generator {
             yield parent::connect();
-
-            $this->logger->debug('Consumer {topic}:{channel} connected to {host}', [
-                'topic' => $this->topic,
-                'channel' => $this->channel,
-                'host' => $this->address,
-            ]);
 
             $this->run();
         });
@@ -128,12 +131,6 @@ final class Consumer extends Connection
                         }
                     }
                 }
-
-                $this->logger->debug('Consumer disconnected.', [
-                    'address' => $this->address,
-                    'topic' => $this->topic,
-                    'channel' => $this->channel,
-                ]);
 
                 $this->close(false);
             });

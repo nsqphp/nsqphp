@@ -144,8 +144,6 @@ final class Lookup
                         unset($consumers[$consumerKey]);
                     })->connect();
 
-                    $this->logger->debug('Consumer created.', compact('address', 'topic', 'channel'));
-
                     $promise->onResolve(function (?\Throwable $e) use ($consumerKey, &$consumers) {
                         if (null !== $e) {
                             $this->logger->error($e->getMessage());
@@ -163,13 +161,13 @@ final class Lookup
 
         $this->watch($topic);
 
-        $this->logger->info('Subscribed', compact('topic', 'channel'));
+        $this->logger->info('Subscribed.', compact('topic', 'channel'));
     }
 
     public function unsubscribe(string $topic, string $channel): void
     {
         if (null === ($this->running[$topic][$channel] ?? null)) {
-            $this->logger->debug('Trying unsubscribe from non subscribed', compact('topic', 'channel'));
+            $this->logger->debug('Not subscribed.', compact('topic', 'channel'));
 
             return;
         }
@@ -180,7 +178,7 @@ final class Lookup
             unset($this->running[$topic]);
         }
 
-        $this->logger->info('Unsubscribed', compact('topic', 'channel'));
+        $this->logger->info('Unsubscribed.', compact('topic', 'channel'));
     }
 
     private function watch(string $topic): void

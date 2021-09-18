@@ -24,6 +24,15 @@ final class Producer extends Connection
             $this->clientConfig,
             $this->logger,
         );
+
+        $context = compact('address');
+        $this->onConnect(function () use ($context) {
+            $this->logger->debug('Producer connected.', $context);
+        });
+        $this->onClose(function () use ($context) {
+            $this->logger->debug('Producer disconnected.', $context);
+        });
+        $this->logger->debug('Producer created.', $context);
     }
 
     public static function create(
@@ -47,10 +56,6 @@ final class Producer extends Connection
 
         return call(function (): \Generator {
             yield parent::connect();
-
-            $this->logger->debug('Producer connected to {host}', [
-                'host' => $this->address,
-            ]);
 
             $this->run();
         });

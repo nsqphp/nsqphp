@@ -43,17 +43,9 @@ abstract class Connection
         private LoggerInterface $logger,
     ) {
         $this->stream = new NullStream();
-        $this->onConnectCallback = static function () use ($logger, $address) {
-            $logger->debug('Connected.', [
-                'class' => static::class,
-                'address' => $address,
-            ]);
+        $this->onConnectCallback = static function () {
         };
-        $this->onCloseCallback = static function () use ($logger, $address) {
-            $logger->debug('Disconnected.', [
-                'class' => static::class,
-                'address' => $address,
-            ]);
+        $this->onCloseCallback = static function () {
         };
     }
 
