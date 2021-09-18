@@ -16,14 +16,14 @@ use function Amp\call;
 final class Producer extends Connection
 {
     public function __construct(
-        private string $address,
-        private ClientConfig $clientConfig,
-        private LoggerInterface $logger,
+        string $address,
+        ClientConfig $clientConfig,
+        LoggerInterface $logger,
     ) {
         parent::__construct(
-            $this->address,
-            $this->clientConfig,
-            $this->logger,
+            $address,
+            $clientConfig,
+            $logger,
         );
 
         $context = compact('address');

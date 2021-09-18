@@ -25,17 +25,23 @@ final class Consumer extends Connection
     private $onMessage;
 
     public function __construct(
-        private string $address,
-        private string $topic,
-        private string $channel,
+        string $address,
+        /**
+         * @readonly
+         */
+        public string $topic,
+        /**
+         * @readonly
+         */
+        public string $channel,
         callable $onMessage,
-        private ClientConfig $clientConfig,
-        private LoggerInterface $logger,
+        ClientConfig $clientConfig,
+        LoggerInterface $logger,
     ) {
         parent::__construct(
-            $this->address,
+            $address,
             $clientConfig,
-            $this->logger,
+            $logger,
         );
 
         $this->onMessage = $onMessage;

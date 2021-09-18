@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nsq;
 
 use Amp\Deferred;
+use Amp\Dns\DnsException;
 use Amp\Http\Client\DelegateHttpClient;
 use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
@@ -123,38 +124,30 @@ final class Lookup
                 $producers = $this->producers[$topic] ??= new Deferred();
 
                 if ($producers instanceof Deferred) {
+                    /** @var array<string, Lookup\Producer> $producers */
                     $producers = yield $producers->promise();
                 }
 
-                /** @var \Nsq\Lookup\Producer $producer */
-                foreach ($producers as $producer) {
-                    $address = $producer->toTcpUri();
-                    $consumerKey = $topic.$address;
+                foreach (array_diff_key($consumers, $producers) as $address => $producer) {
+                    unset($consumers[$address]);
+                }
 
-                    if (\array_key_exists($consumerKey, $consumers)) {
+                foreach ($producers as $address => $producer) {
+                    if (\array_key_exists($address, $consumers)) {
                         continue;
                     }
 
-                    $promise = ($consumers[$consumerKey] = new Consumer(
-                        $address,
-                        $topic,
-                        $channel,
-                        $onMessage,
-                        $config,
-                        $this->logger,
-                    ))->onClose(function () use ($consumerKey, &$consumers) {
-                        unset($consumers[$consumerKey]);
-                    })->connect();
-
-                    $promise->onResolve(function (?\Throwable $e) use ($consumerKey, &$consumers) {
-                        if (null !== $e) {
-                            $this->logger->error($e->getMessage());
-
-                            unset($consumers[$consumerKey]);
-                        }
-                    });
-
-                    yield $promise;
+                    $this->keepConnection(
+                        new Consumer(
+                            $address,
+                            $topic,
+                            $channel,
+                            $onMessage,
+                            $config,
+                            $this->logger,
+                        ),
+                        $consumers,
+                    );
                 }
 
                 yield delay($this->config->pollingInterval);
@@ -181,6 +174,45 @@ final class Lookup
         }
 
         $this->logger->info('Unsubscribed.', compact('topic', 'channel'));
+    }
+
+    private function keepConnection(Consumer $consumer, &$consumers): void
+    {
+        $consumers[$consumer->address] = $consumer;
+
+        asyncCall(function () use ($consumer, &$consumers) {
+            while (\array_key_exists($consumer->address, $consumers)) {
+                try {
+                    yield $consumer->connect();
+                } catch (DnsException $e) {
+                    $this->logger->error($e->getMessage(), ['exception' => $e]);
+
+                    unset($consumers[$consumer->address], $this->producers[$consumer->topic][$consumer->address]);
+
+                    return;
+                } catch (\Throwable $e) {
+                    $this->logger->error($e->getMessage(), ['exception' => $e]);
+
+                    yield delay($this->config->pollingInterval);
+
+                    continue;
+                }
+
+                while (true) {
+                    if (!\array_key_exists($consumer->address, $consumers)) {
+                        $consumer->close();
+
+                        return;
+                    }
+
+                    if (!$consumer->isConnected()) {
+                        break;
+                    }
+
+                    yield delay(500);
+                }
+            }
+        });
     }
 
     private function watch(string $topic): void
@@ -218,14 +250,13 @@ final class Lookup
 
                 $producers = [];
                 foreach ($responses as $response) {
-                    if (($deferred = ($this->producers[$topic] ?? null)) instanceof Deferred) {
-                        $deferred->resolve($response->producers);
-                        unset($this->producers[$topic]);
-                    }
-
                     foreach ($response->producers as $producer) {
                         $producers[$producer->toTcpUri()] = $producer;
                     }
+                }
+
+                if (($deferred = ($this->producers[$topic] ?? null)) instanceof Deferred) {
+                    $deferred->resolve($producers);
                 }
                 $this->producers[$topic] = $producers;
 

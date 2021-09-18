@@ -38,9 +38,12 @@ abstract class Connection
     private $onCloseCallback;
 
     public function __construct(
-        private string $address,
-        private ClientConfig $clientConfig,
-        private LoggerInterface $logger,
+        /**
+         * @readonly
+         */
+        public string $address,
+        protected ClientConfig $clientConfig,
+        protected LoggerInterface $logger,
     ) {
         $this->stream = new NullStream();
         $this->onConnectCallback = static function () {
