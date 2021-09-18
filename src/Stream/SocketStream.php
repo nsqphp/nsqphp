@@ -63,6 +63,9 @@ class SocketStream implements Stream
         return $this->socket->write($data);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function close(): void
     {
         $this->socket->close();

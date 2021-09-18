@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nsq;
 
+use Amp\ByteStream\ClosedException;
 use Amp\Promise;
 use Nsq\Config\ClientConfig;
 use Nsq\Config\ServerConfig;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nsq;
 
+use Amp\ByteStream\ClosedException;
 use Amp\Promise;
 
 interface Stream
@@ -18,5 +19,8 @@ interface Stream
      */
     public function write(string $data): Promise;
 
+    /**
+     * @throws ClosedException
+     */
     public function close(): void;
 }
