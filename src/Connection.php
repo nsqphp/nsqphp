@@ -17,6 +17,7 @@ use Nsq\Stream\NullStream;
 use Nsq\Stream\SnappyStream;
 use Nsq\Stream\SocketStream;
 use Psr\Log\LoggerInterface;
+use function Amp\asyncCall;
 use function Amp\call;
 
 /**
@@ -124,17 +125,41 @@ abstract class Connection
         });
     }
 
-    public function close(): void
+    public function close(bool $graceful = true): void
     {
-//        $this->stream->write(Command::cls());
+        if (!$this->isConnected()) {
+            return;
+        }
 
-        $this->stream->close();
-        $this->stream = new NullStream();
+        $logger = $this->logger;
+        [$stream, $this->stream] = [$this->stream, new NullStream()];
 
-        $this->logger->debug('{class} disconnected from {address}', [
-            'class' => static::class,
-            'address' => $this->address,
-        ]);
+        if ($graceful) {
+            $this->logger->debug('Graceful disconnect.', [
+                'class' => static::class,
+                'address' => $this->address,
+            ]);
+
+            asyncCall(static function () use ($stream, $logger): \Generator {
+                $promise = $stream->write(Command::cls());
+                $promise->onResolve(static function (?\Throwable $e) use ($stream, $logger) {
+                    $stream->close();
+
+                    if (null !== $e) {
+                        $logger->warning($e->getMessage(), ['exception' => $e]);
+                    }
+                });
+
+                yield $promise;
+            });
+
+            return;
+        }
+
+        try {
+            $stream->close();
+        } catch (ClosedException) {
+        }
 
         ($this->onCloseCallback)();
     }
