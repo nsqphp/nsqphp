@@ -6,6 +6,7 @@ namespace Nsq;
 
 use Amp\Failure;
 use Amp\Promise;
+use Amp\Success;
 use Nsq\Config\ClientConfig;
 use Nsq\Exception\ConsumerException;
 use Nsq\Frame\Response;
@@ -135,10 +136,14 @@ final class Consumer extends Connection
     /**
      * Update RDY state (indicate you are ready to receive N messages).
      *
-     * @return Promise<void>
+     * @return Promise<bool>
      */
     public function rdy(int $count): Promise
     {
+        if (!$this->isConnected()) {
+            return new Success(false);
+        }
+
         if ($this->rdy === $count) {
             return call(static function (): void {
             });
@@ -146,19 +151,39 @@ final class Consumer extends Connection
 
         $this->rdy = $count;
 
-        return $this->write(Command::rdy($count));
+        return call(function () use ($count) {
+            try {
+                yield $this->write(Command::rdy($count));
+
+                return true;
+            } catch (\Throwable) {
+                return false;
+            }
+        });
     }
 
     /**
      * Finish a message (indicate successful processing).
      *
-     * @return Promise<void>
+     * @return Promise<bool>
      *
      * @internal
      */
     public function fin(string $id): Promise
     {
-        return $this->write(Command::fin($id));
+        if (!$this->isConnected()) {
+            return new Success(false);
+        }
+
+        return call(function () use ($id) {
+            try {
+                yield $this->write(Command::fin($id));
+
+                return true;
+            } catch (\Throwable) {
+                return false;
+            }
+        });
     }
 
     /**
@@ -167,24 +192,48 @@ final class Consumer extends Connection
      * be explicitly relied upon and may change in the future. Similarly, a message that is in-flight and times out
      * behaves identically to an explicit REQ.
      *
-     * @return Promise<void>
+     * @return Promise<bool>
      *
      * @internal
      */
     public function req(string $id, int $timeout): Promise
     {
-        return $this->write(Command::req($id, $timeout));
+        if (!$this->isConnected()) {
+            return new Success(false);
+        }
+
+        return call(function () use ($id, $timeout) {
+            try {
+                yield $this->write(Command::req($id, $timeout));
+
+                return true;
+            } catch (\Throwable) {
+                return false;
+            }
+        });
     }
 
     /**
      * Reset the timeout for an in-flight message.
      *
-     * @return Promise<void>
+     * @return Promise<bool>
      *
      * @internal
      */
     public function touch(string $id): Promise
     {
-        return $this->write(Command::touch($id));
+        if (!$this->isConnected()) {
+            return new Success(false);
+        }
+
+        return call(function () use ($id) {
+            try {
+                yield $this->write(Command::touch($id));
+
+                return true;
+            } catch (\Throwable) {
+                return false;
+            }
+        });
     }
 }

@@ -37,7 +37,7 @@ final class Message
     }
 
     /**
-     * @return Promise<void>
+     * @psalm-return Promise<bool>
      */
     public function finish(): Promise
     {
@@ -49,7 +49,7 @@ final class Message
     /**
      * @psalm-param positive-int|0 $timeout
      *
-     * @return Promise<void>
+     * @psalm-return Promise<bool>
      */
     public function requeue(int $timeout): Promise
     {
@@ -59,7 +59,7 @@ final class Message
     }
 
     /**
-     * @return Promise<void>
+     * @psalm-return Promise<bool>
      */
     public function touch(): Promise
     {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nsq;
 
 use Amp\Promise;
+use Amp\Success;
 use Nsq\Config\ClientConfig;
 use Nsq\Exception\NsqException;
 use Psr\Log\LoggerInterface;
@@ -92,25 +93,37 @@ final class Producer extends Connection
      *
      * @psalm-param positive-int|0      $delay
      *
-     * @return Promise<void>
+     * @return Promise<bool>
      */
     public function publish(string $topic, string | array $body, int $delay = 0): Promise
     {
-        if (0 < $delay) {
-            return call(
-                function (array $bodies) use ($topic, $delay): \Generator {
-                    foreach ($bodies as $body) {
-                        yield $this->write(Command::dpub($topic, $body, $delay));
-                    }
-                },
-                (array) $body,
-            );
+        if (!$this->isConnected()) {
+            return new Success(false);
         }
 
-        $command = \is_array($body)
-            ? Command::mpub($topic, $body)
-            : Command::pub($topic, $body);
+        return call(
+            function (iterable $commands): \Generator {
+                try {
+                    foreach ($commands as $command) {
+                        yield $this->write($command);
+                    }
 
-        return $this->write($command);
+                    return true;
+                } catch (\Throwable) {
+                    return false;
+                }
+            },
+            (static function () use ($topic, $body, $delay): \Generator {
+                if (\is_array($body) && null === $delay) {
+                    yield Command::mpub($topic, $body);
+                } elseif (null !== $delay) {
+                    foreach ((array) $body as $content) {
+                        yield Command::dpub($topic, $content, $delay);
+                    }
+                } else {
+                    yield Command::pub($topic, $body);
+                }
+            })(),
+        );
     }
 }
