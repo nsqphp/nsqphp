@@ -9,6 +9,7 @@ use Amp\Socket\ClientTlsContext;
 use Amp\Socket\ConnectContext;
 use Amp\Socket\EncryptableSocket;
 use Nsq\Stream;
+
 use function Amp\call;
 use function Amp\Socket\connect;
 

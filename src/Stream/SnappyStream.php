@@ -8,18 +8,19 @@ use Amp\Promise;
 use Nsq\Buffer;
 use Nsq\Exception\SnappyException;
 use Nsq\Stream;
+
 use function Amp\call;
 
 class SnappyStream implements Stream
 {
-    private const IDENTIFIER = [0xff, 0x06, 0x00, 0x00, 0x73, 0x4e, 0x61, 0x50, 0x70, 0x59];
+    private const IDENTIFIER = [0xFF, 0x06, 0x00, 0x00, 0x73, 0x4E, 0x61, 0x50, 0x70, 0x59];
     private const SIZE_HEADER = 4;
     private const SIZE_CHECKSUM = 4;
     private const SIZE_CHUNK = 65536;
-    private const TYPE_IDENTIFIER = 0xff;
+    private const TYPE_IDENTIFIER = 0xFF;
     private const TYPE_COMPRESSED = 0x00;
     private const TYPE_UNCOMPRESSED = 0x01;
-    private const TYPE_PADDING = 0xfe;
+    private const TYPE_PADDING = 0xFE;
 
     private Buffer $buffer;
 
@@ -45,7 +46,7 @@ class SnappyStream implements Stream
             $type = $this->buffer->readUInt32LE();
 
             $size = $type >> 8;
-            $type &= 0xff;
+            $type &= 0xFF;
 
             while ($this->buffer->size() < $size && null !== ($chunk = yield $this->stream->read())) {
                 $this->buffer->append($chunk);
@@ -106,7 +107,7 @@ class SnappyStream implements Stream
 
         /** @phpstan-ignore-next-line */
         $checksum = unpack('N', hash('crc32c', $uncompressed, true))[1];
-        $checksum = (($checksum >> 15) | ($checksum << 17)) + 0xa282ead8 & 0xffffffff;
+        $checksum = (($checksum >> 15) | ($checksum << 17)) + 0xA282EAD8 & 0xFFFFFFFF;
 
         $size = (\strlen($data) + 4) << 8;
 

@@ -17,6 +17,7 @@ use Nsq\Config\LookupConfig;
 use Nsq\Exception\LookupException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+
 use function Amp\asyncCall;
 use function Amp\call;
 use function Amp\delay;

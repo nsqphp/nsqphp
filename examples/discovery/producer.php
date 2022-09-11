@@ -14,6 +14,7 @@ use Nsq\Config\ClientConfig;
 use Nsq\Config\LookupConfig;
 use Nsq\Lookup;
 use Nsq\Producer;
+
 use function Amp\asyncCall;
 use function Amp\delay;
 
@@ -55,7 +56,7 @@ Loop::run(static function () {
                             unset($producers[$address]);
                         })
                         ->connect()
-                ;
+                    ;
                 });
             }
 

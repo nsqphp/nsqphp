@@ -12,9 +12,13 @@ use Nsq\Exception\ConsumerException;
 use Nsq\Frame\Response;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+
 use function Amp\asyncCall;
 use function Amp\call;
 
+/**
+ * @internal
+ */
 final class Consumer extends Connection
 {
     private int $rdy = 0;

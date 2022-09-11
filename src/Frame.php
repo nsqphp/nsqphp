@@ -6,10 +6,9 @@ namespace Nsq;
 
 abstract class Frame
 {
-    public const TYPE_RESPONSE = 0,
-        TYPE_ERROR = 1,
-        TYPE_MESSAGE = 2
-    ;
+    public const TYPE_RESPONSE = 0;
+    public const TYPE_ERROR = 1;
+    public const TYPE_MESSAGE = 2;
 
     public function __construct(public int $type)
     {

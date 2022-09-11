@@ -8,17 +8,18 @@ use Amp\Promise;
 use Nsq\Buffer;
 use Nsq\Exception\StreamException;
 use Nsq\Stream;
+
 use function Amp\call;
 
 class GzipStream implements Stream
 {
     /**
-     * @var resource
+     * @var null|\InflateContext
      */
     private $inflate;
 
     /**
-     * @var resource
+     * @var null|\DeflateContext
      */
     private $deflate;
 
@@ -26,17 +27,19 @@ class GzipStream implements Stream
 
     public function __construct(private Stream $stream, private int $level, string $bytes = '')
     {
-        $this->inflate = @inflate_init(ZLIB_ENCODING_RAW, ['level' => $this->level]);
-        $this->deflate = @deflate_init(ZLIB_ENCODING_RAW, ['level' => $this->level]);
+        $inflate = @inflate_init(ZLIB_ENCODING_RAW, ['level' => $this->level]);
+        $deflate = @deflate_init(ZLIB_ENCODING_RAW, ['level' => $this->level]);
 
-        if (false === $this->inflate) {
+        if (false === $inflate) {
             throw new StreamException('Failed initializing inflate context');
         }
 
-        if (false === $this->deflate) {
+        if (false === $deflate) {
             throw new StreamException('Failed initializing deflate context');
         }
 
+        $this->inflate = $inflate;
+        $this->deflate = $deflate;
         $this->buffer = new Buffer($bytes);
     }
 

@@ -10,6 +10,7 @@ use Nsq\Config\ClientConfig;
 use Nsq\Exception\NsqException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+
 use function Amp\asyncCall;
 use function Amp\call;
 

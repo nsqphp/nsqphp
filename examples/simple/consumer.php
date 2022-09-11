@@ -14,6 +14,7 @@ use Monolog\Processor\PsrLogMessageProcessor;
 use Nsq\Config\ClientConfig;
 use Nsq\Consumer;
 use Nsq\Message;
+
 use function Amp\call;
 
 Loop::run(static function () {

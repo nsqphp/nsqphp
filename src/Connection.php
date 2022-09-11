@@ -17,6 +17,7 @@ use Nsq\Stream\NullStream;
 use Nsq\Stream\SnappyStream;
 use Nsq\Stream\SocketStream;
 use Psr\Log\LoggerInterface;
+
 use function Amp\asyncCall;
 use function Amp\call;
 
