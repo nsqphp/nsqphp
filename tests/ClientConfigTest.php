@@ -7,6 +7,11 @@ use PHPUnit\Framework\TestCase;
 
 final class ClientConfigTest extends TestCase
 {
+    public function testNegotiationPayload(): void
+    {
+        self::assertJson((new ClientConfig())->asNegotiationPayload());
+    }
+
     public function testInvalidCompression(): void
     {
         $this->expectException(InvalidArgumentException::class);
