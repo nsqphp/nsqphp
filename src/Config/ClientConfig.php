@@ -141,6 +141,6 @@ final class ClientConfig
             'user_agent' => $this->userAgent,
         ];
 
-        return json_encode($data, JSON_THROW_ON_ERROR | JSON_FORCE_OBJECT);
+        return json_encode($data, JSON_THROW_ON_ERROR);
     }
 }

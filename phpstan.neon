@@ -8,4 +8,9 @@ parameters:
     paths:
         - src
         - tests
-    checkMissingIterableValueType: false
+    ignoreErrors:
+        -
+            message: '#no value type specified in iterable type array#'
+            paths:
+                - %currentWorkingDirectory%/src
+                - %currentWorkingDirectory%/tests

@@ -13,8 +13,11 @@ final class Buffer extends ByteBuffer
 {
     public function readUInt32LE(): int
     {
-        /** @phpstan-ignore-next-line  */
-        return unpack('V', $this->consume(4))[1];
+        $unpacked = unpack('V', $this->consume(4));
+
+        \assert(\is_array($unpacked) && \array_key_exists(1, $unpacked));
+
+        return $unpacked[1];
     }
 
     public function consumeTimestamp(): int

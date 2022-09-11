@@ -26,7 +26,7 @@ class SnappyStream implements Stream
 
     public function __construct(private Stream $stream, string $bytes = '')
     {
-        if (!\function_exists('snappy_uncompress')) {
+        if (!\function_exists('snappy_uncompress') || !\function_exists('snappy_compress')) {
             throw SnappyException::notInstalled();
         }
 
@@ -60,6 +60,7 @@ class SnappyStream implements Stream
                 case self::TYPE_COMPRESSED:
                     $this->buffer->discard(self::SIZE_CHECKSUM);
 
+                    /** @psalm-suppress UndefinedFunction */
                     return snappy_uncompress($this->buffer->consume($size - self::SIZE_HEADER));
                 case self::TYPE_UNCOMPRESSED:
                     $this->buffer->discard(self::SIZE_CHECKSUM);
@@ -79,6 +80,7 @@ class SnappyStream implements Stream
     public function write(string $data): Promise
     {
         return call(function () use ($data): Promise {
+            /** @var string $result */
             $result = pack('CCCCCCCCCC', ...self::IDENTIFIER);
 
             foreach (str_split($data, self::SIZE_CHUNK) as $chunk) {
@@ -94,23 +96,27 @@ class SnappyStream implements Stream
         $this->stream->close();
     }
 
-    /**
-     * @psalm-suppress PossiblyFalseArgument
-     */
     private function compress(string $uncompressed): string
     {
+        /** @psalm-suppress UndefinedFunction */
         $compressed = snappy_compress($uncompressed);
+
+        \assert(\is_string($compressed));
 
         [$type, $data] = \strlen($compressed) <= 0.875 * \strlen($uncompressed)
             ? [self::TYPE_COMPRESSED, $compressed]
             : [self::TYPE_UNCOMPRESSED, $uncompressed];
 
-        /** @phpstan-ignore-next-line */
-        $checksum = unpack('N', hash('crc32c', $uncompressed, true))[1];
+        /** @psalm-suppress PossiblyFalseArgument */
+        $unpacked = unpack('N', hash('crc32c', $uncompressed, true));
+        \assert(\is_array($unpacked));
+
+        $checksum = $unpacked[1];
         $checksum = (($checksum >> 15) | ($checksum << 17)) + 0xA282EAD8 & 0xFFFFFFFF;
 
         $size = (\strlen($data) + 4) << 8;
 
+        /** @psalm-suppress PossiblyFalseOperand */
         return pack('VV', $type + $size, $checksum).$data;
     }
 }

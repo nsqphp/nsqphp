@@ -13,21 +13,17 @@ use function Amp\call;
 
 class GzipStream implements Stream
 {
-    /**
-     * @var null|\InflateContext
-     */
-    private $inflate;
+    private ?\InflateContext $inflate = null;
 
-    /**
-     * @var null|\DeflateContext
-     */
-    private $deflate;
+    private ?\DeflateContext $deflate = null;
 
     private Buffer $buffer;
 
     public function __construct(private Stream $stream, private int $level, string $bytes = '')
     {
+        /** @var false|\InflateContext $inflate */
         $inflate = @inflate_init(ZLIB_ENCODING_RAW, ['level' => $this->level]);
+        /** @var \DeflateContext|false $deflate */
         $deflate = @deflate_init(ZLIB_ENCODING_RAW, ['level' => $this->level]);
 
         if (false === $inflate) {
@@ -66,6 +62,7 @@ class GzipStream implements Stream
             if ('' === $data) {
                 return null;
             }
+            /** @psalm-suppress UndefinedFunction,InvalidArgument */
             $decompressed = inflate_add($this->inflate, $data, ZLIB_SYNC_FLUSH);
 
             if (false === $decompressed) {
@@ -85,6 +82,7 @@ class GzipStream implements Stream
             throw new StreamException('The stream has already been closed');
         }
 
+        /** @psalm-suppress UndefinedFunction,InvalidArgument */
         $compressed = deflate_add($this->deflate, $data, ZLIB_SYNC_FLUSH);
 
         if (false === $compressed) {

@@ -26,9 +26,6 @@ final class ProducerTest extends TestCase
         });
     }
 
-    /**
-     * @return Generator<string, array>
-     */
     public function pubFails(): Generator
     {
         yield 'Empty body' => ['test', '', 'E_BAD_MESSAGE PUB invalid message body size 0'];

@@ -120,6 +120,7 @@ final class Lookup
                     return;
                 }
 
+                /** @phpstan-ignore-next-line */
                 $producers = $this->producers[$topic] ??= new Deferred();
 
                 if ($producers instanceof Deferred) {
@@ -200,6 +201,7 @@ final class Lookup
                 }
 
                 while (true) {
+                    /** @phpstan-ignore-next-line */
                     if (null === ($this->consumers[$consumer->address][$consumer->topic][$consumer->channel] ?? null)) {
                         $consumer->close();
 
@@ -257,6 +259,7 @@ final class Lookup
                     }
                 }
 
+                /** @phpstan-ignore-next-line */
                 if (($deferred = ($this->producers[$topic] ?? null)) instanceof Deferred) {
                     $deferred->resolve($producers);
                 }
