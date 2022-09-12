@@ -15,15 +15,12 @@ jobs:
                     - ubuntu-latest
                 php:
                     - '8.1'
+                nsq:
+                    - nsq-1.2.0.linux-amd64.go1.12.9
+                    - nsq-1.2.1.linux-amd64.go1.16.6
                 dependencies:
                     - lowest
                     - highest
-        services:
-            nsqd:
-                image: nsqio/nsq:v1.2.0
-                options: --entrypoint /nsqd
-                ports:
-                    - 4150:4150
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
@@ -36,6 +33,12 @@ jobs:
                     extensions: kjdev/php-ext-snappy@0.2.1
                 env:
                     update: true
+
+            - name: Download NSQ
+              run: |
+                  curl -sSL "http://bitly-downloads.s3.amazonaws.com/nsq/${{ matrix.nsq }}.tar.gz" \
+                            | tar -xzv --strip-components=1
+                  ./bin/nsqd --version
 
             -   name: Setup Problem Matchers for PHPUnit
                 run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
