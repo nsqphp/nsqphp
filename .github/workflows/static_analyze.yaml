@@ -1,0 +1,70 @@
+name: Static Analyze
+
+on:
+    - pull_request
+    - push
+
+jobs:
+    phpstan:
+        name: PHPStan
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: '8.1'
+                    extensions: snappy-kjdev/php-ext-snappy@0.2.1
+                env:
+                    update: true
+
+            -   name: Get composer cache directory
+                id: composer-cache
+                run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+            -   name: Cache dependencies
+                uses: actions/cache@v2
+                with:
+                    path: ${{ steps.composer-cache.outputs.dir }}
+                    key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                    restore-keys: ${{ runner.os }}-composer-
+
+            -   name: Install dependencies
+                run: composer update --no-progress --no-interaction --prefer-dist
+
+            -   name: Run script
+                run: composer phpstan
+
+    psalm:
+        name: Psalm
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: '8.1'
+                    extensions: snappy-kjdev/php-ext-snappy@0.2.1
+                env:
+                    update: true
+
+            -   name: Get composer cache directory
+                id: composer-cache
+                run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+            -   name: Cache dependencies
+                uses: actions/cache@v2
+                with:
+                    path: ${{ steps.composer-cache.outputs.dir }}
+                    key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+                    restore-keys: ${{ runner.os }}-composer-
+
+            -   name: Install dependencies
+                run: composer update --no-progress --no-interaction --prefer-dist
+
+            -   name: Run script
+                run: vendor/bin/psalm --output-format=github
