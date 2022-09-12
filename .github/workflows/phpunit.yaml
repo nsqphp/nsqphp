@@ -6,7 +6,7 @@ on:
 
 jobs:
     phpunit:
-        name: Tests
+        name: phpunit
         runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
